@@ -14,10 +14,12 @@ public struct AssistLog: Codable, Equatable, Sendable {
     public var cageHelper = 0
     /// Hint uses by level name (Plan 6).
     public var hints: [String: Int] = [:]
+    /// Whether mistake highlighting was on for any placement (mistakes only count then).
+    public var highlightingUsed = false
 
     public init() {}
 
-    private enum CodingKeys: String, CodingKey { case mistakes, checks, reveals, autoCandidates, cageHelper, hints }
+    private enum CodingKeys: String, CodingKey { case mistakes, checks, reveals, autoCandidates, cageHelper, hints, highlightingUsed }
 
     /// Missing keys decode as zero so older save files keep working.
     public init(from decoder: any Decoder) throws {
@@ -28,6 +30,7 @@ public struct AssistLog: Codable, Equatable, Sendable {
         autoCandidates = try c.decodeIfPresent(Int.self, forKey: .autoCandidates) ?? 0
         cageHelper = try c.decodeIfPresent(Int.self, forKey: .cageHelper) ?? 0
         hints = try c.decodeIfPresent([String: Int].self, forKey: .hints) ?? [:]
+        highlightingUsed = try c.decodeIfPresent(Bool.self, forKey: .highlightingUsed) ?? false
     }
 
     public var isClean: Bool {
@@ -78,6 +81,7 @@ public struct GameSession: Codable, Equatable, Sendable {
             } else {
                 entries[cell] = digit
                 notes[cell] = .empty
+                if settings.mistakeHighlighting { log.highlightingUsed = true }
                 if settings.mistakeHighlighting && digit != puzzle.solution[cell] { log.mistakes += 1 }
                 if settings.autoRemoveCandidates { removeNote(digit, around: cell) }
             }
