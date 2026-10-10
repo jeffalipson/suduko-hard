@@ -18,7 +18,7 @@ The spec covers several independent subsystems, so it is split into plans, each 
 2. **Advanced classic techniques**: Expert → Nightmare (fish, wings, coloring, UR, chains, ALS, forcing chains); generator symmetry relaxation.
 3. **Killer engine**: cage-aware brute force, cage techniques & 45-rule, Killer generator, forge support.
 4. **iOS app**: Xcode project, game screen, settings, autosave/undo, bundled library, queue manager + BGProcessingTask.
-5. **Hints & lessons**: board diagnosis, Nudge/Spotlight/Lesson modal/Show me, lesson content.
+5. **Hints & lessons**: board diagnosis, Nudge/Spotlight/Lesson modal/Show me, lesson content. Must first harden LogicalSolver for player boards: FullHouse/HiddenSingle/HiddenSubset/Pointing must not trust candidates of digits already placed in the house; add contradiction detection (empty cell with no candidates, digit with no position in a house) as a SolveResult status; `solved` must require a valid grid.
 6. **Stats**: SwiftData records, stats page, charts.
 
 ## Global Constraints

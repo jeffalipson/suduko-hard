@@ -52,4 +52,14 @@ import SudokuCore
         #expect(p.cages[0].cells == [t.newCell(for: 0), t.newCell(for: 1)].sorted())
         #expect(p.cages[0].cells.map { p.solution[$0] }.reduce(0, +) == 8)
     }
+
+    @Test(arguments: [Tier.medium, .hard])
+    func transformsPreserveTierOfGeneratedPuzzles(tier: Tier) throws {
+        var rng = SplitMix64(seed: 11)
+        let puzzle = try #require(ClassicGenerator().generate(tier: tier, using: &rng))
+        for _ in 0..<10 {
+            let p = GridTransform.random(for: puzzle, using: &rng).apply(to: puzzle)
+            #expect(Grader.grade(p.givens)?.grade.tier == tier)
+        }
+    }
 }

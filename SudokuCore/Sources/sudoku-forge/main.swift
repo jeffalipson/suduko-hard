@@ -82,11 +82,20 @@ while puzzles.count < options.count {
     log("[\(puzzles.count)/\(options.count)] score \(puzzle.grade.score) \(techniques)")
 }
 
+// Never clobber an existing library with nothing.
+guard !puzzles.isEmpty else {
+    log("no puzzles generated; \(options.out!) left untouched")
+    exit(3)
+}
+
 let encoder = JSONEncoder()
 encoder.outputFormatting = [.sortedKeys]
 do {
-    try encoder.encode(puzzles).write(to: URL(fileURLWithPath: options.out!))
+    try encoder.encode(puzzles).write(to: URL(fileURLWithPath: options.out!), options: .atomic)
 } catch {
     log("failed to write \(options.out!): \(error)")
     exit(1)
 }
+
+// A short library is written, but the shortfall is reported to scripts.
+if puzzles.count < options.count { exit(3) }
