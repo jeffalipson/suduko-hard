@@ -93,7 +93,7 @@ struct HomeView: View {
         guard let i = args.firstIndex(of: "-open"), i + 1 < args.count,
               let key = QueueKey.all.first(where: { $0.name == args[i + 1] }) else { return }
         mode = key.mode
-        open(key)
+        if args.contains("-new") { startNew(key) } else { open(key) }
     }
 
     private func open(_ key: QueueKey) {

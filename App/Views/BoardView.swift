@@ -6,6 +6,10 @@ import SudokuGame
 struct BoardView: View {
     let session: GameSession
     let settings: GameSettings
+    /// Hint overlays: cells to spotlight, candidates forming the pattern (green), candidates removed (red).
+    var spotlight: Set<Int> = []
+    var marks: [CellDigit] = []
+    var pattern: [CellDigit] = []
     let onTap: (Int) -> Void
 
     var body: some View {
@@ -45,6 +49,7 @@ struct BoardView: View {
             }
         }
         for c in session.flaggedWrong { ctx.fill(Path(rect(c, unit)), with: .color(Theme.wrongFill)) }
+        for c in spotlight { ctx.fill(Path(rect(c, unit)), with: .color(Color.yellow.opacity(0.35))) }
 
         // Cages.
         if !session.puzzle.cages.isEmpty { drawCages(in: &ctx, unit: unit) }
@@ -64,7 +69,17 @@ struct BoardView: View {
                     let inset = session.puzzle.cages.isEmpty ? unit * 0.06 : unit * 0.14
                     let w = (unit - 2 * inset) / 3
                     let p = CGPoint(x: r.minX + inset + w * (col + 0.5), y: r.minY + inset + w * (row + 0.5))
-                    ctx.draw(Text("\(d)").font(.system(size: unit * 0.22)).foregroundStyle(Theme.note), at: p)
+                    let cd = CellDigit(cell: c, digit: d)
+                    let marked = marks.contains(cd)
+                    let color = marked ? Theme.wrong : (pattern.contains(cd) ? Color.green : Theme.note)
+                    ctx.draw(Text("\(d)").font(.system(size: unit * 0.22, weight: marked || pattern.contains(cd) ? .bold : .regular))
+                        .foregroundStyle(color), at: p)
+                    if marked {
+                        var strike = Path()
+                        strike.move(to: CGPoint(x: p.x - w * 0.35, y: p.y + w * 0.3))
+                        strike.addLine(to: CGPoint(x: p.x + w * 0.35, y: p.y - w * 0.3))
+                        ctx.stroke(strike, with: .color(Theme.wrong), lineWidth: 1.2)
+                    }
                 }
             }
         }

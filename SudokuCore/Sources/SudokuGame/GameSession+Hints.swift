@@ -25,3 +25,11 @@ extension GameSession {
         log.reveals += 1
     }
 }
+
+extension GameSession {
+    /// A display-only session for lesson boards, with the example's candidates as notes.
+    public init(lessonPuzzle: Puzzle, notes: [CandidateSet]) {
+        self.init(puzzle: lessonPuzzle)
+        restore(Snapshot(entries: lessonPuzzle.givens, notes: notes))
+    }
+}

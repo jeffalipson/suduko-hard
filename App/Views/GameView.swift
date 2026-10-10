@@ -10,6 +10,14 @@ struct GameView: View {
     @State private var session: GameSession?
     @State private var showCageHelper = false
     @State private var showCompletion = false
+    @State private var diagnosis: HintDiagnosis?
+    @State private var hintLevel = 0
+    @State private var showLesson = false
+
+    private var hintStep: Step? {
+        if case .step(let step) = diagnosis { return step }
+        return nil
+    }
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
@@ -41,7 +49,9 @@ struct GameView: View {
     private func content(_ s: Binding<GameSession>) -> some View {
         VStack(spacing: 16) {
             ZStack {
-                BoardView(session: s.wrappedValue, settings: model.settings) { cell in
+                BoardView(session: s.wrappedValue, settings: model.settings,
+                          spotlight: hintLevel >= 2 ? Set(hintStep?.patternCells ?? []) : [],
+                          pattern: hintLevel >= 2 ? (hintStep.map { $0.patternCandidates + $0.groups.flatMap { $0 } } ?? []) : []) { cell in
                     s.wrappedValue.selected = cell
                 }
                 .opacity(s.wrappedValue.isPaused ? 0 : 1)
@@ -56,7 +66,31 @@ struct GameView: View {
                 }
             }
             .padding(.horizontal, 8)
-            ControlsView(session: s, settings: model.settings, onChange: { changed(s.wrappedValue) }, showCageHelper: $showCageHelper)
+            if let diagnosis {
+                HintBar(diagnosis: diagnosis, level: hintLevel,
+                        onSpotlight: {
+                            hintLevel = 2
+                            s.wrappedValue.useHint("spotlight")
+                            model.update(s.wrappedValue, for: key)
+                        },
+                        onLesson: {
+                            s.wrappedValue.useHint("lesson")
+                            model.update(s.wrappedValue, for: key)
+                            showLesson = true
+                        },
+                        onClose: { self.diagnosis = nil; hintLevel = 0 })
+                    .padding(.horizontal, 12)
+            }
+            ControlsView(session: s, settings: model.settings, onChange: { changed(s.wrappedValue) }, showCageHelper: $showCageHelper,
+                         onHint: {
+                             let d = HintEngine.diagnose(s.wrappedValue)
+                             diagnosis = d
+                             hintLevel = 1
+                             if case .step = d {
+                                 s.wrappedValue.useHint("nudge")
+                                 model.update(s.wrappedValue, for: key)
+                             }
+                         })
                 .padding(.horizontal, 12)
                 .disabled(s.wrappedValue.isPaused)
             Spacer(minLength: 0)
@@ -82,6 +116,16 @@ struct GameView: View {
             }
         }
         .sheet(isPresented: $showCageHelper) { CageHelperView(session: s.wrappedValue) }
+        .sheet(isPresented: $showLesson) {
+            if let step = hintStep {
+                LessonView(technique: step.technique, example: model.lessons[step.technique]) {
+                    s.wrappedValue.showMe(step)
+                    diagnosis = nil
+                    hintLevel = 0
+                    changed(s.wrappedValue)
+                }
+            }
+        }
         .sheet(isPresented: $showCompletion) {
             CompletionView(session: s.wrappedValue, mistakesCounted: model.settings.mistakeHighlighting) {
                 showCompletion = false
@@ -92,6 +136,7 @@ struct GameView: View {
     }
 
     private func changed(_ s: GameSession) {
+        if hintLevel > 0 && !showLesson { diagnosis = nil; hintLevel = 0 }
         if s.isComplete {
             model.finish(s, for: key)
             UINotificationFeedbackGenerator().notificationOccurred(.success)

@@ -14,6 +14,12 @@ final class AppModel {
     private(set) var queues: PuzzleQueues
     private(set) var games: [String: GameSession]
     let library: PuzzleLibrary
+    let lessons: [TechniqueID: LessonExample] = {
+        guard let url = Bundle.main.url(forResource: "lessons", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let list = try? JSONDecoder().decode([LessonExample].self, from: data) else { return [:] }
+        return Dictionary(list.map { ($0.technique, $0) }, uniquingKeysWith: { a, _ in a })
+    }()
     private var rng = SystemRandomNumberGenerator()
     private var refilling = false
     /// Set by the background task's expiration handler to stop between keys.

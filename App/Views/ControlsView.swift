@@ -6,6 +6,7 @@ struct ControlsView: View {
     let settings: GameSettings
     let onChange: () -> Void
     @Binding var showCageHelper: Bool
+    let onHint: () -> Void
 
     var body: some View {
         VStack(spacing: 14) {
@@ -47,15 +48,16 @@ struct ControlsView: View {
                         showCageHelper = true
                     }
                 }
-                tool("Hint", "lightbulb", id: "hint", enabled: false) {}   // Plan 6
+                tool("Hint", "lightbulb", id: "hint", notify: false) { onHint() }
             }
         }
     }
 
-    private func tool(_ title: String, _ icon: String, id: String, enabled: Bool = true, action: @escaping () -> Void) -> some View {
+    private func tool(_ title: String, _ icon: String, id: String, enabled: Bool = true, notify: Bool = true,
+                      action: @escaping () -> Void) -> some View {
         Button {
             action()
-            onChange()
+            if notify { onChange() }
         } label: {
             VStack(spacing: 4) {
                 Image(systemName: icon).font(.title3)
