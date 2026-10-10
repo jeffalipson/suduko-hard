@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 import SudokuCore
 
@@ -63,5 +64,42 @@ import SudokuCore
             #expect(cage.cells.count <= 5)
         }
         #expect(BruteForceSolver.countSolutions(solution, cages: cages) == 1)
+    }
+}
+
+@Suite struct KillerReviewFixTests {
+    @Test func boardDropsMalformedCages() {
+        let cages = [Cage(cells: [0, 81], sum: 3), Cage(cells: [1, 2], sum: 3), Cage(cells: [2, 3], sum: 4)]
+        var board = Board(values: Array(repeating: 0, count: 81), cages: cages)
+        #expect(board.cages == [Cage(cells: [1, 2], sum: 3)])
+        #expect(board.cageOf[0] == -1)
+        #expect(board.cageOf[3] == -1)
+        board.place(1, at: 0)   // must not trap
+        #expect(board.cageMates(of: 1) == [2])
+    }
+
+    @Test func puzzleDecodingRejectsMalformedCages() {
+        let json = """
+        {"id":"x","mode":"killer","givens":"\(String(repeating: "0", count: 81))","solution":"\(wikiSolution)",
+         "cages":[{"cells":[0,90],"sum":5}],"grade":{"tier":0,"score":1},"techniquesRequired":[]}
+        """
+        #expect(throws: DecodingError.self) { try JSONDecoder().decode(Puzzle.self, from: Data(json.utf8)) }
+    }
+
+    @Test func rulesRejectUndersizedCages() {
+        let rules = KillerRules.forTier(.nightmare)
+        #expect(!rules.admits([Cage(cells: [0, 1], sum: 3)]))
+        #expect(rules.admits([Cage(cells: [0, 1, 2], sum: 6)]))
+        #expect(!rules.admits([Cage(cells: Array(0..<9), sum: 45)]))
+    }
+
+    @Test(arguments: 1...10)
+    func partitionMergesUndersizedCages(seed: Int) {
+        var rng = SplitMix64(seed: UInt64(seed))
+        let solution = BruteForceSolver.randomSolution(using: &rng)
+        let cages = KillerCages.partition(solution: solution, sizes: 3...7, using: &rng)
+        let undersized = cages.filter { $0.cells.count < 3 }.count
+        #expect(Double(undersized) / Double(cages.count) < 0.05)
+        #expect(cages.flatMap(\.cells).sorted() == Array(0..<81))
     }
 }

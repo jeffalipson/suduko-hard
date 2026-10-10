@@ -16,6 +16,13 @@ public struct KillerRules: Sendable, Equatable {
     }
 }
 
+extension KillerRules {
+    /// Every cage fits this tier's sizes (one-cell cages are allowed; they count as givens).
+    public func admits(_ cages: [Cage]) -> Bool {
+        cages.allSatisfy { $0.cells.count == 1 || cageSizes.contains($0.cells.count) }
+    }
+}
+
 public struct KillerGenerator: Sendable {
     public let solver: LogicalSolver
 
@@ -42,6 +49,7 @@ public struct KillerGenerator: Sendable {
         let capped = LogicalSolver(techniques: solver.techniques.filter { $0.id.tier <= tier })
         let solution = BruteForceSolver.randomSolution(using: &rng)
         let cages = KillerCages.partition(solution: solution, sizes: rules.cageSizes, using: &rng)
+        guard rules.admits(cages) else { return nil }
         // A one-cell cage gives its digit away, so it counts as a given.
         let singletonCells = Set(cages.filter { $0.cells.count == 1 }.map { $0.cells[0] })
         guard singletonCells.count <= rules.givens.upperBound else { return nil }

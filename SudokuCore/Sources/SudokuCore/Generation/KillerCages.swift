@@ -13,6 +13,16 @@ public enum KillerCages {
     /// Cages aim for a random size in `sizes`; leftover single cells merge into a neighbouring cage
     /// when that keeps the cage valid and within the maximum size.
     public static func partition<R: RandomNumberGenerator>(solution: [Int], sizes: ClosedRange<Int>, using rng: inout R) -> [Cage] {
+        // Layouts are cheap: retry until every cage reaches the minimum size.
+        var cages: [Cage] = []
+        for _ in 0..<100 {
+            cages = layout(solution: solution, sizes: sizes, using: &rng)
+            if cages.allSatisfy({ $0.cells.count >= sizes.lowerBound }) { break }
+        }
+        return cages
+    }
+
+    static func layout<R: RandomNumberGenerator>(solution: [Int], sizes: ClosedRange<Int>, using rng: inout R) -> [Cage] {
         var cageOf = [Int](repeating: -1, count: 81)
         var groups: [[Int]] = []
         for start in Array(0..<81).shuffled(using: &rng) where cageOf[start] == -1 {
@@ -31,15 +41,23 @@ public enum KillerCages {
             }
             groups.append(cells)
         }
-        for i in groups.indices where groups[i].count == 1 {
-            let cell = groups[i][0]
-            let options = neighbours(cell).map { cageOf[$0] }.filter { j in
-                j != i && groups[j].count < sizes.upperBound && !groups[j].contains { solution[$0] == solution[cell] }
+        // Merge cages smaller than the minimum (including single cells) into a neighbouring cage
+        // when the result keeps distinct digits and stays within the maximum size.
+        var merged = true
+        while merged {
+            merged = false
+            for i in groups.indices where !groups[i].isEmpty && groups[i].count < max(2, sizes.lowerBound) {
+                let digits = Set(groups[i].map { solution[$0] })
+                let options = Set(groups[i].flatMap(neighbours).map { cageOf[$0] }).sorted().filter { j in
+                    j != i && !groups[j].isEmpty && groups[j].count + groups[i].count <= sizes.upperBound
+                        && digits.isDisjoint(with: groups[j].map { solution[$0] })
+                }
+                guard let j = options.first else { continue }
+                for cell in groups[i] { cageOf[cell] = j }
+                groups[j] += groups[i]
+                groups[i] = []
+                merged = true
             }
-            guard let j = options.first else { continue }
-            groups[j].append(cell)
-            groups[i] = []
-            cageOf[cell] = j
         }
         return groups.filter { !$0.isEmpty }.map { cells in
             Cage(cells: cells.sorted(), sum: cells.map { solution[$0] }.reduce(0, +))

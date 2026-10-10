@@ -12,18 +12,23 @@ public struct Board: Hashable, Sendable {
         precondition(values.count == 81, "A board needs 81 values")
         self.values = values
         self.givens = values.map { $0 != 0 }
-        self.cages = cages
+        // Malformed cages (empty, out-of-range or repeated cells, or overlapping an earlier cage) are dropped.
         var cageOf = [Int](repeating: -1, count: 81)
-        for (i, cage) in cages.enumerated() {
-            for c in cage.cells where (0..<81).contains(c) { cageOf[c] = i }
+        var kept: [Cage] = []
+        for cage in cages {
+            guard !cage.cells.isEmpty, Set(cage.cells).count == cage.cells.count,
+                  cage.cells.allSatisfy({ (0..<81).contains($0) && cageOf[$0] == -1 }) else { continue }
+            for c in cage.cells { cageOf[c] = kept.count }
+            kept.append(cage)
         }
+        self.cages = kept
         self.cageOf = cageOf
         self.candidates = Array(repeating: .empty, count: 81)
         for c in 0..<81 where values[c] == 0 {
             var set = CandidateSet.all
             for p in Geometry.peers[c] where values[p] != 0 { set.remove(values[p]) }
             if cageOf[c] >= 0 {
-                for p in cages[cageOf[c]].cells where (0..<81).contains(p) && values[p] != 0 { set.remove(values[p]) }
+                for p in kept[cageOf[c]].cells where values[p] != 0 { set.remove(values[p]) }
             }
             candidates[c] = set
         }
