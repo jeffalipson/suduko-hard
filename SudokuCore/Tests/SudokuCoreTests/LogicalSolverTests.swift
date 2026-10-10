@@ -39,10 +39,14 @@ import SudokuCore
     }
 
     @Test func catalogCoversEveryTechniqueOnceInTierOrder() {
-        let ids = TechniqueCatalog.classic.map(\.id)
-        #expect(ids.count == TechniqueID.allCases.count)
-        #expect(Set(ids) == Set(TechniqueID.allCases))
-        #expect(ids.map(\.tier) == ids.map(\.tier).sorted())
+        let classic = TechniqueCatalog.classic.map(\.id)
+        let killer = TechniqueCatalog.killer.map(\.id)
+        #expect(Set(classic) == Set(TechniqueID.allCases.filter { !$0.isKillerOnly }))
+        #expect(classic.count == Set(classic).count)
+        #expect(classic.map(\.tier) == classic.map(\.tier).sorted())
+        #expect(killer.count == Set(killer).count)
+        #expect(killer.map(\.tier) == killer.map(\.tier).sorted())
+        #expect(Set(killer) == Set(TechniqueID.allCases.filter { !$0.rawValue.hasPrefix("uniqueRectangle") }))
     }
 
     @Test func nextStepPrefersEasiestTechnique() throws {

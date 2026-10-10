@@ -13,6 +13,7 @@ public struct LogicalSolver: Sendable {
     }
 
     public static let classic = LogicalSolver(techniques: TechniqueCatalog.classic)
+    public static let killer = LogicalSolver(techniques: TechniqueCatalog.killer)
 
     /// The hardest tier this solver can grade.
     public var maxTier: Tier { techniques.map { $0.id.tier }.max() ?? .easy }

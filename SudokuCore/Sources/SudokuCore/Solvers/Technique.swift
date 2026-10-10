@@ -52,4 +52,17 @@ public enum TechniqueCatalog {
         ForcingChain.digit,
         ForcingChain.nested,
     ]
+
+    /// Killer techniques: the classic catalog minus unique rectangles (swapping digits changes
+    /// cage sums, so the deadly-pattern argument fails) plus the cage techniques, by tier then weight.
+    public static let killer: [any Technique] = {
+        let cageTechniques: [any Technique] = [
+            CageCompletion(), UniqueCageCombination(), CageCombination(),
+            InnieOutie.oneHouse, CageLockedDigit(), InnieOutie.twoHouses, InnieOutie.manyHouses,
+        ]
+        let pool = cageTechniques + classic.filter { !$0.id.rawValue.hasPrefix("uniqueRectangle") }
+        return pool.enumerated()
+            .sorted { ($0.element.id.tier, $0.element.id.weight, $0.offset) < ($1.element.id.tier, $1.element.id.weight, $1.offset) }
+            .map(\.element)
+    }()
 }

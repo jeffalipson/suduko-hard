@@ -58,22 +58,24 @@ func parse(_ args: [String]) -> Options {
 let options = parse(Array(CommandLine.arguments.dropFirst()))
 let tier = options.tier!
 
-guard options.mode == .classic else {
-    log("killer generation is not implemented yet")
-    exit(1)
-}
-guard tier <= LogicalSolver.classic.maxTier else {
-    log("tier \(tier.name) is not supported yet (max: \(LogicalSolver.classic.maxTier.name))")
+let maxTier = options.mode == .classic ? LogicalSolver.classic.maxTier : LogicalSolver.killer.maxTier
+guard tier <= maxTier else {
+    log("tier \(tier.name) is not supported yet (max: \(maxTier.name))")
     exit(1)
 }
 
 var rng = SplitMix64(seed: options.seed ?? UInt64.random(in: .min ... .max))
-let generator = ClassicGenerator()
+@MainActor func generate(_ tier: Tier, _ deadline: ContinuousClock.Instant) -> Puzzle? {
+    switch options.mode {
+    case .classic: return ClassicGenerator().generate(tier: tier, using: &rng, deadline: deadline)
+    case .killer: return KillerGenerator().generate(tier: tier, using: &rng, deadline: deadline)
+    }
+}
 var puzzles: [Puzzle] = []
 
 while puzzles.count < options.count {
     let deadline = ContinuousClock.now + .seconds(options.timeout)
-    guard let puzzle = generator.generate(tier: tier, using: &rng, deadline: deadline) else {
+    guard let puzzle = generate(tier, deadline) else {
         log("timed out after \(options.timeout)s on puzzle \(puzzles.count + 1); writing \(puzzles.count)")
         break
     }
