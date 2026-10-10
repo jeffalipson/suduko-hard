@@ -40,7 +40,8 @@ public struct SimpleColoring: Technique {
                         patternCells: cluster,
                         patternCandidates: cluster.map { CellDigit(cell: $0, digit: digit) },
                         eliminations: eliminations,
-                        digits: [digit]
+                        digits: [digit],
+                        groups: groups.map { $0.map { CellDigit(cell: $0, digit: digit) } }
                     )
                 }
 

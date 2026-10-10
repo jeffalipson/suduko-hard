@@ -111,7 +111,8 @@ public struct FinnedFish: Technique {
                             patternCandidates: base.cells.map { CellDigit(cell: $0, digit: digit) },
                             eliminations: eliminations,
                             regions: (base.baseHouses + cover.map(base.coverHouse)).map(Region.init(house:)) + [.box(finBox)],
-                            digits: [digit]
+                            digits: [digit],
+                            groups: [fins.map { CellDigit(cell: $0, digit: digit) }]
                         )
                     }
                 }

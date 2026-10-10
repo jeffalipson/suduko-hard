@@ -9,7 +9,7 @@ public struct CellDigit: Hashable, Sendable, Codable {
 }
 
 /// One logical deduction. Drives grading, hints, Spotlight and "Show me".
-public struct Step: Hashable, Sendable {
+public struct Step: Hashable, Sendable, Codable {
     public let technique: TechniqueID
     /// Cells forming the pattern (highlighted by Spotlight).
     public let patternCells: [Int]
@@ -21,6 +21,8 @@ public struct Step: Hashable, Sendable {
     public let regions: [Region]
     /// Digits the pattern is about.
     public let digits: [Int]
+    /// Secondary highlights for hints: colour groups, fins, subset cells.
+    public let groups: [[CellDigit]]
 
     public init(
         technique: TechniqueID,
@@ -29,7 +31,8 @@ public struct Step: Hashable, Sendable {
         placements: [CellDigit] = [],
         eliminations: [CellDigit] = [],
         regions: [Region] = [],
-        digits: [Int] = []
+        digits: [Int] = [],
+        groups: [[CellDigit]] = []
     ) {
         self.technique = technique
         self.patternCells = patternCells
@@ -38,5 +41,6 @@ public struct Step: Hashable, Sendable {
         self.eliminations = eliminations
         self.regions = regions
         self.digits = digits
+        self.groups = groups
     }
 }

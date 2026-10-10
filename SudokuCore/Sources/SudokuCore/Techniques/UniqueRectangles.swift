@@ -36,15 +36,16 @@ public struct UniqueRectangle: Technique {
         let floor = corners.filter { board.candidates[$0] == ab }
         let roof = corners.filter { board.candidates[$0] != ab }
 
-        func make(_ eliminations: [CellDigit]) -> Step? {
+        func make(_ eliminations: [CellDigit], extraRegions: [Region] = [], groups: [[CellDigit]] = [], extraDigits: [Int] = []) -> Step? {
             guard !eliminations.isEmpty else { return nil }
             return Step(
                 technique: id,
                 patternCells: corners,
                 patternCandidates: corners.flatMap { c in ab.digits.map { CellDigit(cell: c, digit: $0) } },
                 eliminations: eliminations,
-                regions: regions,
-                digits: ab.digits
+                regions: regions + extraRegions,
+                digits: ab.digits + extraDigits,
+                groups: groups
             )
         }
 
@@ -62,7 +63,7 @@ public struct UniqueRectangle: Technique {
         switch type {
         case 2:
             guard let z = extras.single else { return nil }
-            return make(board.eliminations(of: z, seeingAll: roof, excluding: corners))
+            return make(board.eliminations(of: z, seeingAll: roof, excluding: corners), extraDigits: [z])
         case 3:
             for h in sharedHouses {
                 let others = Geometry.houses[h].filter { board.values[$0] == 0 && !roof.contains($0) }
@@ -73,7 +74,9 @@ public struct UniqueRectangle: Technique {
                         let eliminations = others.filter { !combo.contains($0) }.flatMap { c in
                             board.candidates[c].intersection(union).digits.map { CellDigit(cell: c, digit: $0) }
                         }
-                        if let step = make(eliminations) { return step }
+                        if let step = make(eliminations, extraRegions: [Region(house: h)], groups: [board.candidateDigits(of: combo)]) {
+                            return step
+                        }
                     }
                 }
             }
@@ -81,8 +84,8 @@ public struct UniqueRectangle: Technique {
         default:
             let (a, b) = (ab.digits[0], ab.digits[1])
             for h in sharedHouses {
-                for (kept, removed) in [(a, b), (b, a)] where board.cells(with: kept, in: Geometry.houses[h]) == roof {
-                    if let step = make(roof.map { CellDigit(cell: $0, digit: removed) }) { return step }
+                for (kept, removed) in [(a, b), (b, a)] where Set(board.cells(with: kept, in: Geometry.houses[h])) == Set(roof) {
+                    if let step = make(roof.map { CellDigit(cell: $0, digit: removed) }, extraRegions: [Region(house: h)]) { return step }
                 }
             }
             return nil
