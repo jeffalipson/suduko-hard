@@ -101,4 +101,9 @@ public struct GameSession: Codable, Equatable, Sendable {
         entries = s.entries
         notes = s.notes
     }
+
+    public mutating func setPaused(_ paused: Bool) { isPaused = paused }
+    mutating func addElapsed(_ seconds: Double) { elapsed += seconds }
+    mutating func flag(_ cells: [Int]) { flaggedWrong.formUnion(cells) }
+    mutating func unflag(_ cell: Int) { flaggedWrong.remove(cell) }
 }
