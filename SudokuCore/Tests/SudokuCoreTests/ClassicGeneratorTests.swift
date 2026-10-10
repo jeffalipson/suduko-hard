@@ -2,7 +2,7 @@ import Testing
 import SudokuCore
 
 @Suite struct ClassicGeneratorTests {
-    @Test(arguments: [Tier.easy, .medium, .hard])
+    @Test(arguments: [Tier.easy, .medium, .hard, .expert, .fiendish])
     func generatesRequestedTier(tier: Tier) throws {
         var rng = SplitMix64(seed: 42)
         let p = try #require(ClassicGenerator().generate(tier: tier, using: &rng))
@@ -21,7 +21,7 @@ import SudokuCore
     @Test func unsupportedTierReturnsNilImmediately() {
         var rng = SplitMix64(seed: 1)
         let start = ContinuousClock.now
-        #expect(ClassicGenerator().generate(tier: .expert, using: &rng) == nil)
+        #expect(ClassicGenerator().generate(tier: .diabolical, using: &rng) == nil)
         #expect(ContinuousClock.now - start < .seconds(1))
     }
 

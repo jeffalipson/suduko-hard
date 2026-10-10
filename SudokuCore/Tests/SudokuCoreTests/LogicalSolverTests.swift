@@ -33,7 +33,14 @@ import SudokuCore
     }
 
     @Test func maxTierOfClassicCatalog() {
-        #expect(LogicalSolver.classic.maxTier == .hard)
+        #expect(LogicalSolver.classic.maxTier == .fiendish)
+    }
+
+    @Test func catalogCoversEveryTechniqueOnceInTierOrder() {
+        let ids = TechniqueCatalog.classic.map(\.id)
+        #expect(ids.count == TechniqueID.allCases.count)
+        #expect(Set(ids) == Set(TechniqueID.allCases))
+        #expect(ids.map(\.tier) == ids.map(\.tier).sorted())
     }
 
     @Test func nextStepPrefersEasiestTechnique() throws {
