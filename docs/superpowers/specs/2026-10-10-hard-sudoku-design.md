@@ -83,6 +83,7 @@ Techniques are tried in a fixed order (easiest first, ties broken by weight).
 - **Tier** = tier of the hardest technique used by the LogicalSolver.
 - **Score** = sum of step weights; orders puzzles within a tier.
 - `techniquesRequired` = distinct techniques used.
+- **Difficulty floor:** generated Expert, Fiendish and Diabolical puzzles must use a technique of their tier at least twice (Nightmare: once), so one lucky step amid singles doesn't earn the label.
 
 ### 4.5 Classic tier ladder
 
@@ -165,6 +166,7 @@ That gives ~1.2 × 10¹² variants per classic puzzle. Cages transform with thei
 - Controls: Normal / Candidate mode toggle; number pad 1–9 (a digit dims once all nine are placed); Undo, Redo (unlimited); Erase; Hint.
 - Top bar: timer; pause (hides board, stops timer); menu with Check cell, Check puzzle, Reveal cell (all logged).
 - Haptic feedback on placement, error, completion.
+- VoiceOver: every cell is an accessibility element (position, digit or "given", candidates, Killer cage) that selects the cell when activated.
 - Autosave on every move; one unfinished game per mode × tier.
 
 ### 6.3 Settings (all toggles)
