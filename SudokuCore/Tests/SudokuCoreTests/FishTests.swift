@@ -40,3 +40,36 @@ import SudokuCore
         #expect(soundnessViolations(of: BasicFish(size: size), seeds: 1...30).isEmpty)
     }
 }
+
+@Suite struct FinnedFishTests {
+    @Test func finnedXWing() throws {
+        // Rows 1 and 4 on columns 2/6, fin at (4,7) in box 5.
+        let b = board(digit: 2, onlyIn: [rc(1, 2), rc(1, 6), rc(4, 2), rc(4, 6), rc(4, 7), rc(3, 6)])
+        #expect(BasicFish(size: 2).find(in: b) == nil)
+        let step = try #require(FinnedFish(size: 2).find(in: b))
+        #expect(step.technique == .finnedXWing)
+        #expect(step.eliminations == [CellDigit(cell: rc(3, 6), digit: 2)])
+        #expect(step.regions.last == .box(5))
+    }
+
+    @Test func finnedSwordfish() throws {
+        // Rows 0, 3, 6 on columns 1/4/7, fin at (6,8) in box 8.
+        let b = board(digit: 8, onlyIn: [
+            rc(0, 1), rc(0, 4), rc(3, 4), rc(3, 7), rc(6, 1), rc(6, 7), rc(6, 8), rc(8, 7),
+        ])
+        let step = try #require(FinnedFish(size: 3).find(in: b))
+        #expect(step.technique == .finnedSwordfish)
+        #expect(step.eliminations == [CellDigit(cell: rc(8, 7), digit: 8)])
+    }
+
+    @Test func plainXWingHasNoFin() {
+        // Rows give a basic X-Wing; the column view has fins in different boxes.
+        let b = board(digit: 5, onlyIn: [rc(1, 2), rc(1, 6), rc(4, 2), rc(4, 6), rc(7, 2), rc(0, 6)])
+        #expect(FinnedFish(size: 2).find(in: b) == nil)
+    }
+
+    @Test(arguments: 2...3)
+    func sound(size: Int) {
+        #expect(soundnessViolations(of: FinnedFish(size: size), seeds: 1...30).isEmpty)
+    }
+}

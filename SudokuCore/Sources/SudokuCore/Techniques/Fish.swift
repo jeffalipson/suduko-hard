@@ -72,3 +72,51 @@ public struct BasicFish: Technique {
         return nil
     }
 }
+
+/// A fish with extra candidates ("fins") confined to one box: either a fin is true or the
+/// fish holds, so cover-line cells inside the fin box lose the digit.
+public struct FinnedFish: Technique {
+    public let size: Int
+
+    public init(size: Int) {
+        precondition((2...3).contains(size), "Finned fish size must be 2 or 3")
+        self.size = size
+    }
+
+    public var id: TechniqueID { size == 2 ? .finnedXWing : .finnedSwordfish }
+
+    public func find(in board: Board) -> Step? {
+        for digit in 1...9 {
+            for baseIsRows in [true, false] {
+                for base in FishBase.all(board: board, digit: digit, baseIsRows: baseIsRows, size: size, maxPerLine: size + 2) {
+                    let allCover = base.coverIndices
+                    guard allCover.count > size else { continue }
+                    for cover in allCover.combinations(of: size) {
+                        let fins = base.cells.filter { !cover.contains(base.coverIndex($0)) }
+                        let finBox = Geometry.box(fins[0])
+                        guard fins.allSatisfy({ Geometry.box($0) == finBox }) else { continue }
+                        // Every base line keeps at least one candidate inside the cover.
+                        let covered = base.baseHouses.allSatisfy { h in
+                            Geometry.houses[h].contains { base.cells.contains($0) && cover.contains(base.coverIndex($0)) }
+                        }
+                        guard covered else { continue }
+                        let eliminations = cover.map(base.coverHouse)
+                            .flatMap { Geometry.houses[$0] }
+                            .filter { board.has(digit, at: $0) && !base.cells.contains($0) && Geometry.box($0) == finBox }
+                            .map { CellDigit(cell: $0, digit: digit) }
+                        guard !eliminations.isEmpty else { continue }
+                        return Step(
+                            technique: id,
+                            patternCells: base.cells,
+                            patternCandidates: base.cells.map { CellDigit(cell: $0, digit: digit) },
+                            eliminations: eliminations,
+                            regions: (base.baseHouses + cover.map(base.coverHouse)).map(Region.init(house:)) + [.box(finBox)],
+                            digits: [digit]
+                        )
+                    }
+                }
+            }
+        }
+        return nil
+    }
+}
