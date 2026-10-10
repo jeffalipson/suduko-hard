@@ -65,3 +65,47 @@ func soundnessViolations(of technique: any Technique, seeds: ClosedRange<Int>) -
     }
     return failures
 }
+
+/// Horizontal dominoes (r, 2k)-(r, 2k+1) plus a single cell in column 8, summed from `solution`.
+func dominoCages(for solution: [Int]) -> [Cage] {
+    var cages: [Cage] = []
+    for r in 0..<9 {
+        for k in 0..<4 {
+            let cells = [rc(r, 2 * k), rc(r, 2 * k + 1)]
+            cages.append(Cage(cells: cells, sum: cells.map { solution[$0] }.reduce(0, +)))
+        }
+        cages.append(Cage(cells: [rc(r, 8)], sum: solution[rc(r, 8)]))
+    }
+    return cages
+}
+
+/// A random Killer board (not necessarily unique): cages of 2–5 cells and 20 revealed cells.
+func randomKillerPuzzle(seed: UInt64) -> (givens: [Int], cages: [Cage], solution: [Int]) {
+    var rng = SplitMix64(seed: seed)
+    let solution = BruteForceSolver.randomSolution(using: &rng)
+    let cages = KillerCages.partition(solution: solution, sizes: 2...5, using: &rng)
+    var givens = Array(repeating: 0, count: 81)
+    for c in Array(0..<81).shuffled(using: &rng).prefix(20) { givens[c] = solution[c] }
+    return (givens, cages, solution)
+}
+
+/// Killer counterpart of `soundnessViolations`: walks random Killer boards with the classic
+/// catalog minus unique rectangles plus `technique`. Non-uniqueness techniques never remove a
+/// digit of any solution, so multi-solution boards are fine here.
+func killerSoundnessViolations(of technique: any Technique, seeds: ClosedRange<Int>) -> [String] {
+    let base = TechniqueCatalog.classic.filter { !$0.id.rawValue.hasPrefix("uniqueRectangle") }
+    let solver = LogicalSolver(techniques: base + [technique])
+    var failures: [String] = []
+    for seed in seeds {
+        let (givens, cages, solution) = randomKillerPuzzle(seed: UInt64(seed))
+        var board = Board(values: givens, cages: cages)
+        for _ in 0..<300 {
+            if let step = technique.find(in: board), !isSound(step, solution: solution) {
+                failures.append("seed \(seed): \(step.technique) on \(board.string)")
+            }
+            guard let next = solver.nextStep(on: board) else { break }
+            board.apply(next)
+        }
+    }
+    return failures
+}

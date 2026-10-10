@@ -15,6 +15,12 @@ extension Board {
             }
             if placed.union(possible) != .all { return true }
         }
+        for cage in cages {
+            let placed = cage.cells.map { values[$0] }.filter { $0 != 0 }
+            let total = placed.reduce(0, +)
+            if Set(placed).count != placed.count || total > cage.sum { return true }
+            if placed.count == cage.cells.count && total != cage.sum { return true }
+        }
         return false
     }
 }

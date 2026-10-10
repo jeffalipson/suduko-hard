@@ -4,6 +4,8 @@ public struct Board: Hashable, Sendable {
     public let givens: [Bool]
     public var candidates: [CandidateSet]
     public let cages: [Cage]
+    /// Index into `cages` for each cell, or -1 when the cell has no cage.
+    public let cageOf: [Int]
 
     /// Builds a board from 81 values (0 = empty); candidates are filled from the placed digits.
     public init(values: [Int], cages: [Cage] = []) {
@@ -11,10 +13,18 @@ public struct Board: Hashable, Sendable {
         self.values = values
         self.givens = values.map { $0 != 0 }
         self.cages = cages
+        var cageOf = [Int](repeating: -1, count: 81)
+        for (i, cage) in cages.enumerated() {
+            for c in cage.cells where (0..<81).contains(c) { cageOf[c] = i }
+        }
+        self.cageOf = cageOf
         self.candidates = Array(repeating: .empty, count: 81)
         for c in 0..<81 where values[c] == 0 {
             var set = CandidateSet.all
             for p in Geometry.peers[c] where values[p] != 0 { set.remove(values[p]) }
+            if cageOf[c] >= 0 {
+                for p in cages[cageOf[c]].cells where (0..<81).contains(p) && values[p] != 0 { set.remove(values[p]) }
+            }
             candidates[c] = set
         }
     }
@@ -46,11 +56,17 @@ public struct Board: Hashable, Sendable {
 
     public var isSolved: Bool { !values.contains(0) }
 
+    /// Other cells in `cell`'s cage.
+    public func cageMates(of cell: Int) -> [Int] {
+        cageOf[cell] < 0 ? [] : cages[cageOf[cell]].cells.filter { $0 != cell }
+    }
+
     /// Places a digit and removes it from the candidates of every peer.
     public mutating func place(_ digit: Int, at cell: Int) {
         values[cell] = digit
         candidates[cell] = .empty
         for p in Geometry.peers[cell] { candidates[p].remove(digit) }
+        for p in cageMates(of: cell) { candidates[p].remove(digit) }
     }
 
     public mutating func eliminate(_ digit: Int, at cell: Int) {
