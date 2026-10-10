@@ -49,6 +49,7 @@ public struct TierStats: Equatable, Sendable {
 
 public struct AssistanceSummary: Equatable, Sendable {
     public var games = 0
+    public var wins = 0
     public var mistakes = 0
     public var mistakeGames = 0
     public var hints: [String: Int] = [:]
@@ -56,6 +57,9 @@ public struct AssistanceSummary: Equatable, Sendable {
     public var reveals = 0
     public var assists = 0
     public var cleanSolves = 0
+
+    /// Clean solves as a share of wins (a clean solve is always a win).
+    public var cleanRate: Double { wins == 0 ? 0 : Double(cleanSolves) / Double(wins) }
 }
 
 public enum StatsCalculator {
@@ -81,10 +85,11 @@ public enum StatsCalculator {
         return s
     }
 
-    public static func assistance(_ records: [GameRecordData], mode: Mode) -> AssistanceSummary {
+    public static func assistance(_ records: [GameRecordData], mode: Mode, tier: Tier? = nil) -> AssistanceSummary {
         var a = AssistanceSummary()
-        for r in filtered(records, mode: mode) {
+        for r in filtered(records, mode: mode, tier: tier) {
             a.games += 1
+            if r.won { a.wins += 1 }
             if let m = r.mistakes {
                 a.mistakes += m
                 a.mistakeGames += 1

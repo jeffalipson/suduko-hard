@@ -65,3 +65,18 @@ func record(_ won: Bool, _ elapsed: Double, day: Double, tier: Tier = .hard, mis
         #expect(GameRecordData(session: g, won: false, endDate: .now).mistakes == 1)
     }
 }
+
+@Suite struct StatsReviewFixTests {
+    @Test func assistanceByTierWithCleanRateOverWins() {
+        let records = [record(true, 1, day: 1, tier: .hard), record(false, 1, day: 2, tier: .hard),
+                       record(true, 1, day: 3, tier: .easy, hints: ["nudge": 2])]
+        let hard = StatsCalculator.assistance(records, mode: .classic, tier: .hard)
+        #expect(hard.games == 2)
+        #expect(hard.wins == 1)
+        #expect(hard.cleanRate == 1.0)
+        let all = StatsCalculator.assistance(records, mode: .classic)
+        #expect(all.wins == 2)
+        #expect(all.cleanRate == 0.5)
+        #expect(StatsCalculator.assistance([], mode: .classic).cleanRate == 0)
+    }
+}

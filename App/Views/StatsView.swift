@@ -45,10 +45,23 @@ struct StatsView: View {
 
                 Section("Assistance") {
                     let a = StatsCalculator.assistance(records, mode: mode)
-                    stat("Clean solves", a.games == 0 ? "—" : "\(a.cleanSolves) of \(a.games)")
+                    stat("Clean solves", a.wins == 0 ? "—" : "\(a.cleanSolves) of \(a.wins) wins (\(Int((a.cleanRate * 100).rounded()))%)")
                     stat("Mistakes (highlighting on)", a.mistakeGames == 0 ? "—" : "\(a.mistakes) in \(a.mistakeGames) games")
-                    stat("Hints", ["nudge", "spotlight", "lesson", "showMe"].map { "\(a.hints[$0, default: 0])" }.joined(separator: " / "))
+                    stat("Nudge · Spotlight · Lesson · Show me",
+                         ["nudge", "spotlight", "lesson", "showMe"].map { "\(a.hints[$0, default: 0])" }.joined(separator: " · "))
                     stat("Checks · Reveals · Assists", "\(a.checks) · \(a.reveals) · \(a.assists)")
+                }
+
+                Section("Assistance by difficulty (per game)") {
+                    ForEach(Tier.allCases, id: \.self) { tier in
+                        let a = StatsCalculator.assistance(records, mode: mode, tier: tier)
+                        if a.games > 0 {
+                            let hints = Double(a.hints.values.reduce(0, +)) / Double(a.games)
+                            let reveals = Double(a.reveals) / Double(a.games)
+                            stat(tier.name.capitalized,
+                                 String(format: "%.1f hints · %.1f reveals · %d%% clean", hints, reveals, Int((a.cleanRate * 100).rounded())))
+                        }
+                    }
                 }
 
                 Section("Techniques you've beaten") {

@@ -141,6 +141,8 @@ final class AppModel {
             return false
         }
         queues.push(puzzle, for: key, using: &rng)
+        // Cancelled while generating: keep the puzzle queued, but don't replace (and abandon) the current game.
+        guard !Task.isCancelled else { return false }
         return startNew(key) != nil
     }
 }
