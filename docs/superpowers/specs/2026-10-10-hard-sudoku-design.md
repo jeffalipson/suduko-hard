@@ -93,7 +93,7 @@ Techniques are tried in a fixed order (easiest first, ties broken by weight).
 | Expert | X-Wing, Swordfish, XY-Wing, Skyscraper, 2-String Kite, Unique Rectangle type 1 |
 | Fiendish | XYZ-Wing, W-Wing, Jellyfish, finned X-Wing/Swordfish, simple coloring, empty rectangle, UR types 2–4 |
 | Diabolical | X-Cycles (single-digit alternating chains), XY-Chains, AIC, ALS-XZ, Sue de Coq |
-| Nightmare | Forcing chains (cell, unit, digit), nested forcing chains (propagating with Easy–Hard techniques) |
+| Nightmare | Forcing chains (cell, unit, digit), nested forcing chains (propagating with Easy–Hard techniques, subsets up to triples) |
 
 ### 4.6 Killer techniques and tiers
 Killer puzzles may use every classic technique, plus:
@@ -108,7 +108,7 @@ Killer puzzles may use every classic technique, plus:
 | Diabolical | Cage-combination interactions across overlapping regions | 0 | 3–7 |
 | Nightmare | Requires a classic Diabolical/Nightmare technique or chains involving cage combinations | 0 | 3–8 |
 
-A Killer puzzle's tier is the maximum of its hardest technique's tier and the tier implied by givens/cage sizes.
+A Killer puzzle's tier is its hardest technique's tier; its givens and cage sizes must also fit that tier's row of the table. Unique rectangles are never used in Killer (swapping digits changes cage sums).
 
 ## 5. Generation, library, and queues
 
