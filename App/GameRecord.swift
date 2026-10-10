@@ -19,6 +19,7 @@ final class GameRecord {
     var assists: Int
     var clean: Bool
     var techniques: [String]
+    var startedAt: Date?
 
     init(_ d: GameRecordData) {
         mode = d.mode.rawValue
@@ -34,6 +35,7 @@ final class GameRecord {
         assists = d.assists
         clean = d.clean
         techniques = d.techniques.map(\.rawValue)
+        startedAt = d.startedAt
     }
 
     var data: GameRecordData? {
@@ -41,6 +43,6 @@ final class GameRecord {
         return GameRecordData(mode: m, tier: t, puzzleID: puzzleID, endDate: endDate, elapsed: elapsed, won: won,
                               mistakes: mistakes, hints: (try? JSONDecoder().decode([String: Int].self, from: hintsJSON)) ?? [:],
                               checks: checks, reveals: reveals, assists: assists, clean: clean,
-                              techniques: techniques.compactMap(TechniqueID.init(rawValue:)))
+                              techniques: techniques.compactMap(TechniqueID.init(rawValue:)), startedAt: startedAt)
     }
 }

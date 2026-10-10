@@ -15,7 +15,25 @@ final class AppModel {
     private(set) var queues: PuzzleQueues
     private(set) var games: [String: GameSession]
     let library: PuzzleLibrary
-    let container: ModelContainer = try! ModelContainer(for: GameRecord.self)
+    let container: ModelContainer = AppModel.makeContainer()
+
+    /// UI tests run with `-uitest`: an in-memory stats store and a scratch state file.
+    nonisolated static var isUITest: Bool { ProcessInfo.processInfo.arguments.contains("-uitest") }
+
+    /// The stats store. A store that won't open (corrupt, or a failed migration) is deleted and
+    /// recreated rather than crashing the app; as a last resort stats live in memory.
+    static func makeContainer() -> ModelContainer {
+        if isUITest, let memory = try? ModelContainer(for: GameRecord.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true)) {
+            return memory
+        }
+        if let container = try? ModelContainer(for: GameRecord.self) { return container }
+        let store = ModelConfiguration().url
+        for suffix in ["", "-shm", "-wal"] {
+            try? FileManager.default.removeItem(at: URL(fileURLWithPath: store.path + suffix))
+        }
+        if let container = try? ModelContainer(for: GameRecord.self) { return container }
+        return try! ModelContainer(for: GameRecord.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+    }
     let lessons: [TechniqueID: LessonExample] = {
         guard let url = Bundle.main.url(forResource: "lessons", withExtension: "json"),
               let data = try? Data(contentsOf: url),

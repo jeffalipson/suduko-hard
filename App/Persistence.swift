@@ -35,7 +35,9 @@ struct Lenient<T: Decodable>: Decodable {
 
 enum Persistence {
     static var url: URL {
-        let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let dir = AppModel.isUITest
+            ? FileManager.default.temporaryDirectory.appendingPathComponent("HardSudokuUITest")
+            : FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir.appendingPathComponent("state.json")
     }

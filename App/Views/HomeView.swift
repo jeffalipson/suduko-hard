@@ -9,6 +9,7 @@ struct HomeView: View {
     @State private var showSettings = false
     @State private var showStats = false
     @State private var debugLesson: TechniqueID?
+    @State private var confirmNew: QueueKey?
     @State private var generating: QueueKey?
     @State private var generationTask: Task<Void, Never>?
     @State private var generationFailed = false
@@ -31,7 +32,7 @@ struct HomeView: View {
                         .accessibilityIdentifier("tier-\(tier.name)")
                         .contextMenu {
                             if model.resumable(key) != nil {
-                                Button("New Game", systemImage: "arrow.counterclockwise") { startNew(key) }
+                                Button("New Game", systemImage: "arrow.counterclockwise") { confirmNew = key }
                             }
                         }
                 }
@@ -46,6 +47,12 @@ struct HomeView: View {
                     Button("Stats", systemImage: "chart.bar") { showStats = true }
                         .accessibilityIdentifier("statsButton")
                 }
+            }
+            .confirmationDialog("Start a new game?", isPresented: Binding(get: { confirmNew != nil }, set: { if !$0 { confirmNew = nil } }),
+                                titleVisibility: .visible, presenting: confirmNew) { key in
+                Button("New Game", role: .destructive) { startNew(key) }
+            } message: { _ in
+                Text("Your game in progress will count as abandoned in your stats.")
             }
             .sheet(isPresented: $showSettings) { SettingsView() }
             .sheet(isPresented: $showStats) { StatsView() }

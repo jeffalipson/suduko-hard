@@ -3,6 +3,7 @@ import XCTest
 final class CoreLoopUITests: XCTestCase {
     func testPlayEnterUndoPause() {
         let app = XCUIApplication()
+        app.launchArguments = ["-uitest"]
         app.launch()
         XCTAssertTrue(app.buttons["tier-easy"].waitForExistence(timeout: 10))
         app.buttons["tier-easy"].tap()
@@ -27,7 +28,7 @@ final class CoreLoopUITests: XCTestCase {
 final class HintUITests: XCTestCase {
     func testHintNudgeSpotlightLessonShowMe() {
         let app = XCUIApplication()
-        app.launchArguments = ["-open", "classic-easy", "-new"]
+        app.launchArguments = ["-uitest", "-open", "classic-easy", "-new"]
         app.launch()
         XCTAssertTrue(app.buttons["hint"].waitForExistence(timeout: 15))
         app.buttons["hint"].tap()
@@ -44,6 +45,7 @@ final class HintUITests: XCTestCase {
 final class StatsUITests: XCTestCase {
     func testStatsOpens() {
         let app = XCUIApplication()
+        app.launchArguments = ["-uitest"]
         app.launch()
         XCTAssertTrue(app.buttons["statsButton"].waitForExistence(timeout: 10))
         app.buttons["statsButton"].tap()
@@ -54,11 +56,26 @@ final class StatsUITests: XCTestCase {
 final class AccessibilityUITests: XCTestCase {
     func testBoardCellsAreReadable() {
         let app = XCUIApplication()
-        app.launchArguments = ["-open", "classic-easy", "-new"]
+        app.launchArguments = ["-uitest", "-open", "classic-easy", "-new"]
         app.launch()
         let cell = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH 'Row 5, column 5.'")).firstMatch
         XCTAssertTrue(cell.waitForExistence(timeout: 15))
         cell.tap()
         XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH 'Row 5, column 5.'")).firstMatch.isSelected)
+    }
+}
+
+final class NewGameConfirmationUITests: XCTestCase {
+    func testNewGameOverAGameInProgressAsksFirst() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uitest", "-open", "classic-easy"]
+        app.launch()
+        XCTAssertTrue(app.buttons["hint"].waitForExistence(timeout: 15))
+        app.navigationBars.buttons.element(boundBy: 0).tap()   // back to home
+        let row = app.buttons["tier-easy"]
+        XCTAssertTrue(row.waitForExistence(timeout: 10))
+        row.press(forDuration: 1.2)
+        app.buttons["New Game"].firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["Start a new game?"].waitForExistence(timeout: 5))
     }
 }

@@ -44,6 +44,10 @@ struct GameView: View {
             s.tick(1)
             session = s
         }
+        .onDisappear {
+            // Keep the clock's progress when leaving (moves save themselves; ticks don't).
+            if let s = session, !s.isComplete { model.update(s, for: key) }
+        }
         .onChange(of: phase) { _, new in
             if new != .active, var s = session, !s.isComplete { s.setPaused(true); session = s; model.update(s, for: key) }
         }
@@ -143,7 +147,7 @@ struct GameView: View {
             }
         }
         .sheet(isPresented: $showCompletion) {
-            CompletionView(session: s.wrappedValue, mistakesCounted: model.settings.mistakeHighlighting) {
+            CompletionView(session: s.wrappedValue, mistakesCounted: GameRecordData.recordedMistakes(s.wrappedValue.log) != nil) {
                 showCompletion = false
                 dismiss()
             }
