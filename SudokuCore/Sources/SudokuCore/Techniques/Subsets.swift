@@ -68,7 +68,7 @@ public struct HiddenSubset: Technique {
             let empties = house.filter { board.values[$0] == 0 }
             guard empties.count > size else { continue }
             var positions: [Int: [Int]] = [:]
-            for d in 1...9 {
+            for d in 1...9 where !house.contains(where: { board.values[$0] == d }) {
                 let cells = empties.filter { board.candidates[$0].contains(d) }
                 if (2...size).contains(cells.count) { positions[d] = cells }
             }

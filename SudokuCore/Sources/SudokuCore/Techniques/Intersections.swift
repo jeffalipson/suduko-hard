@@ -7,7 +7,7 @@ public struct Pointing: Technique {
         for b in 0..<9 {
             for digit in 1...9 {
                 let cells = Geometry.boxes[b].filter { board.values[$0] == 0 && board.candidates[$0].contains(digit) }
-                guard cells.count >= 2 else { continue }
+                guard cells.count >= 2, !Geometry.boxes[b].contains(where: { board.values[$0] == digit }) else { continue }
                 let line: Int
                 if Set(cells.map(Geometry.row)).count == 1 {
                     line = Geometry.row(cells[0])
@@ -44,7 +44,7 @@ public struct BoxLineReduction: Technique {
             let house = Geometry.houses[line]
             for digit in 1...9 {
                 let cells = house.filter { board.values[$0] == 0 && board.candidates[$0].contains(digit) }
-                guard cells.count >= 2 else { continue }
+                guard cells.count >= 2, !house.contains(where: { board.values[$0] == digit }) else { continue }
                 let b = Geometry.box(cells[0])
                 guard cells.allSatisfy({ Geometry.box($0) == b }) else { continue }
                 let eliminations = Geometry.boxes[b]

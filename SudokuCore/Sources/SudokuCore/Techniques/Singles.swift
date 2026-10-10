@@ -6,7 +6,10 @@ public struct FullHouse: Technique {
     public func find(in board: Board) -> Step? {
         for (h, house) in Geometry.houses.enumerated() {
             let empty = house.filter { board.values[$0] == 0 }
-            guard empty.count == 1, let digit = board.candidates[empty[0]].single else { continue }
+            guard empty.count == 1 else { continue }
+            // The missing digit comes from the placed values, not from (possibly stale) candidates.
+            let missing = CandidateSet.all.subtracting(CandidateSet(house.map { board.values[$0] }.filter { $0 != 0 }))
+            guard let digit = missing.single else { continue }
             return Step(
                 technique: id,
                 patternCells: house,
@@ -45,7 +48,7 @@ public struct HiddenSingle: Technique {
 
     public func find(in board: Board) -> Step? {
         for (h, house) in Geometry.houses.enumerated() {
-            for digit in 1...9 {
+            for digit in 1...9 where !house.contains(where: { board.values[$0] == digit }) {
                 var spot = -1
                 var n = 0
                 for c in house where board.values[c] == 0 && board.candidates[c].contains(digit) {

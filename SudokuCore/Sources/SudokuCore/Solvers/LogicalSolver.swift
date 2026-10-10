@@ -1,7 +1,7 @@
 public struct SolveResult: Sendable {
     public let board: Board
     public let steps: [Step]
-    public var solved: Bool { board.isSolved }
+    public var solved: Bool { board.isSolved && !board.isContradictory }
 }
 
 /// Solves like a human: always applies the easiest technique that makes progress.
