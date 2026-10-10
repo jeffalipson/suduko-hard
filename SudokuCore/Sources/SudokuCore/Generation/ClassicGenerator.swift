@@ -50,7 +50,8 @@ public struct ClassicGenerator: Sendable {
             for c in singles where (accepted?.grade.tier ?? .easy) < tier { tryRemoving([c]) }
         }
 
-        guard let report = accepted, report.grade.tier == tier else { return nil }
+        guard let report = accepted, report.grade.tier == tier,
+              report.tierSteps >= Grader.minimumTierSteps(tier) else { return nil }
         return Puzzle(
             id: String(rng.next(), radix: 16),
             mode: .classic,

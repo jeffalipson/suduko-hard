@@ -39,3 +39,25 @@ import SudokuCore
         #expect(ClassicGenerator().generate(tier: .medium, using: &a) == ClassicGenerator().generate(tier: .medium, using: &b))
     }
 }
+
+@Suite struct DifficultyFloorTests {
+    func tierSteps(_ p: Puzzle, solver: LogicalSolver) -> Int {
+        solver.solve(Board(values: p.givens, cages: p.cages)).steps.filter { $0.technique.tier == p.grade.tier }.count
+    }
+
+    @Test(arguments: [Tier.expert, .fiendish])
+    func classicPuzzlesNeedTheirTierMoreThanOnce(tier: Tier) throws {
+        for seed in 1...6 {
+            var rng = SplitMix64(seed: UInt64(seed))
+            let p = try #require(ClassicGenerator().generate(tier: tier, using: &rng))
+            #expect(tierSteps(p, solver: .classic) >= 2, "seed \(seed)")
+            #expect(Grader.grade(p.givens)?.tierSteps == tierSteps(p, solver: .classic))
+        }
+    }
+
+    @Test func floorsByTier() {
+        #expect(Grader.minimumTierSteps(.hard) == 1)
+        #expect(Grader.minimumTierSteps(.expert) == 2)
+        #expect(Grader.minimumTierSteps(.nightmare) == 1)
+    }
+}
