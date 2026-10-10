@@ -52,6 +52,11 @@ public struct Puzzle: Codable, Hashable, Sendable, Identifiable {
         self.givens = givens
         self.solution = solution
         cages = try c.decodeIfPresent([Cage].self, forKey: .cages) ?? []
+        let cells = cages.flatMap(\.cells)
+        guard cells.allSatisfy({ (0..<81).contains($0) }), Set(cells).count == cells.count,
+              cages.allSatisfy({ !$0.cells.isEmpty && (1...45).contains($0.sum) }) else {
+            throw DecodingError.dataCorruptedError(forKey: .cages, in: c, debugDescription: "Malformed cages")
+        }
         grade = try c.decode(Grade.self, forKey: .grade)
         techniquesRequired = try c.decode([TechniqueID].self, forKey: .techniquesRequired)
     }
