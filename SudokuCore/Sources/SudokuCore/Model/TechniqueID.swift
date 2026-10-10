@@ -6,6 +6,8 @@ public enum TechniqueID: String, Codable, CaseIterable, Sendable {
     case xWing, uniqueRectangle1, skyscraper, twoStringKite, xyWing, swordfish
     case emptyRectangle, xyzWing, wWing, uniqueRectangle2, uniqueRectangle4, uniqueRectangle3
     case finnedXWing, simpleColoring, finnedSwordfish, jellyfish
+    case xCycle, xyChain, sueDeCoq, alsXZ, aic
+    case cellForcingChain, unitForcingChain, digitForcingChain, nestedForcingChain
 
     public var tier: Tier {
         switch self {
@@ -20,6 +22,10 @@ public enum TechniqueID: String, Codable, CaseIterable, Sendable {
         case .emptyRectangle, .xyzWing, .wWing, .uniqueRectangle2, .uniqueRectangle4, .uniqueRectangle3,
              .finnedXWing, .simpleColoring, .finnedSwordfish, .jellyfish:
             return .fiendish
+        case .xCycle, .xyChain, .sueDeCoq, .alsXZ, .aic:
+            return .diabolical
+        case .cellForcingChain, .unitForcingChain, .digitForcingChain, .nestedForcingChain:
+            return .nightmare
         }
     }
 
@@ -53,6 +59,15 @@ public enum TechniqueID: String, Codable, CaseIterable, Sendable {
         case .simpleColoring: return 200
         case .finnedSwordfish: return 210
         case .jellyfish: return 220
+        case .xCycle: return 250
+        case .xyChain: return 260
+        case .sueDeCoq: return 270
+        case .alsXZ: return 280
+        case .aic: return 300
+        case .cellForcingChain: return 400
+        case .unitForcingChain: return 420
+        case .digitForcingChain: return 450
+        case .nestedForcingChain: return 500
         }
     }
 
@@ -85,6 +100,15 @@ public enum TechniqueID: String, Codable, CaseIterable, Sendable {
         case .simpleColoring: return "Simple Coloring"
         case .finnedSwordfish: return "Finned Swordfish"
         case .jellyfish: return "Jellyfish"
+        case .xCycle: return "X-Cycle"
+        case .xyChain: return "XY-Chain"
+        case .sueDeCoq: return "Sue de Coq"
+        case .alsXZ: return "ALS-XZ"
+        case .aic: return "Alternating Inference Chain"
+        case .cellForcingChain: return "Cell Forcing Chain"
+        case .unitForcingChain: return "Unit Forcing Chain"
+        case .digitForcingChain: return "Digit Forcing Chain"
+        case .nestedForcingChain: return "Nested Forcing Chain"
         }
     }
 }
