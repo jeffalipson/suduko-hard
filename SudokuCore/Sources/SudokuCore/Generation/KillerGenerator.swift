@@ -113,6 +113,27 @@ public struct KillerGenerator: Sendable {
             }
         }
         guard report.grade.tier == tier else { return nil }
+
+        // Keep merging while the puzzle stays at the target tier, so cages grow toward the sizes
+        // the tier allows instead of stopping at mostly two- and three-cell cages. Capped so the
+        // extra grading (expensive at the top tiers) stays bounded.
+        var tries = 0
+        growth: while tries < 60 {
+            for (i, j) in KillerCages.mergeablePairs(cages, solution: solution, maxSize: rules.cageSizes.upperBound)
+                .shuffled(using: &rng) {
+                if let deadline, ContinuousClock.now >= deadline { break growth }
+                tries += 1
+                if tries > 60 { break growth }
+                let candidate = KillerCages.merging(cages, i, j)
+                if let r = Grader.grade(empty, cages: candidate, solution: solution, solver: capped), r.grade.tier == tier {
+                    cages = candidate
+                    report = r
+                    continue growth
+                }
+            }
+            break
+        }
+
         return Puzzle(
             id: String(rng.next(), radix: 16),
             mode: .killer,

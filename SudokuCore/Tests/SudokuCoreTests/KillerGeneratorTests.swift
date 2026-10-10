@@ -43,3 +43,33 @@ import SudokuCore
         #expect(!p.cages.contains { $0.cells.count == 1 })
     }
 }
+
+@Suite struct KillerCageShapeTests {
+    @Test(arguments: 1...3)
+    func zeroGivenPuzzlesUseLargerCagesToo(seed: Int) throws {
+        var rng = SplitMix64(seed: UInt64(seed))
+        let p = try #require(KillerGenerator().generate(tier: .expert, using: &rng))
+        let big = p.cages.filter { $0.cells.count >= 4 }.count
+        #expect(big >= 3, "only \(big) cages of 4+ cells")
+    }
+
+    @Test func mergedCagesStayConnectedWithDistinctDigits() throws {
+        var rng = SplitMix64(seed: 9)
+        let p = try #require(KillerGenerator().generate(tier: .fiendish, using: &rng))
+        for cage in p.cages {
+            let digits = cage.cells.map { p.solution[$0] }
+            #expect(Set(digits).count == digits.count)
+            // Flood fill from the first cell over orthogonal neighbours inside the cage.
+            var seen: Set<Int> = [cage.cells[0]]
+            var stack = [cage.cells[0]]
+            while let c = stack.popLast() {
+                for n in [c - 9, c + 9, c % 9 > 0 ? c - 1 : -1, c % 9 < 8 ? c + 1 : -1]
+                where cage.cells.contains(n) && !seen.contains(n) {
+                    seen.insert(n)
+                    stack.append(n)
+                }
+            }
+            #expect(seen.count == cage.cells.count, "cage \(cage.cells) not connected")
+        }
+    }
+}
