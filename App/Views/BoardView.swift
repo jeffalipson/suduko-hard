@@ -10,6 +10,8 @@ struct BoardView: View {
     var spotlight: Set<Int> = []
     var marks: [CellDigit] = []
     var pattern: [CellDigit] = []
+    /// Secondary hint highlights (colour groups, fins, subset cells), drawn in orange.
+    var secondary: [CellDigit] = []
     /// Digits a hint places, drawn in green in their empty cells.
     var placed: [CellDigit] = []
     let onTap: (Int) -> Void
@@ -76,8 +78,9 @@ struct BoardView: View {
                     let p = CGPoint(x: r.minX + inset + w * (col + 0.5), y: r.minY + inset + w * (row + 0.5))
                     let cd = CellDigit(cell: c, digit: d)
                     let marked = marks.contains(cd)
-                    let color = marked ? Theme.wrong : (pattern.contains(cd) ? Color.green : Theme.note)
-                    ctx.draw(Text("\(d)").font(.system(size: unit * 0.22, weight: marked || pattern.contains(cd) ? .bold : .regular))
+                    let highlighted = pattern.contains(cd) || secondary.contains(cd)
+                    let color = marked ? Theme.wrong : (secondary.contains(cd) ? Color.orange : (pattern.contains(cd) ? Color.green : Theme.note))
+                    ctx.draw(Text("\(d)").font(.system(size: unit * 0.22, weight: marked || highlighted ? .bold : .regular))
                         .foregroundStyle(color), at: p)
                     if marked {
                         var strike = Path()

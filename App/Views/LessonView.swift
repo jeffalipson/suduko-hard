@@ -19,6 +19,7 @@ struct LessonView: View {
                                   spotlight: phase >= 1 ? Set(example.step.patternCells) : [],
                                   marks: phase >= 2 ? example.step.eliminations : [],
                                   pattern: phase >= 1 ? example.step.patternCandidates : [],
+                                  secondary: phase >= 1 ? example.step.groups.dropFirst(example.step.technique == .simpleColoring ? 1 : 0).flatMap { $0 } : [],
                                   placed: phase >= 2 ? example.step.placements : []) { _ in }
                             .frame(maxWidth: .infinity)
                             .task {

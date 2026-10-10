@@ -28,9 +28,15 @@ public struct GameRecordData: Codable, Equatable, Sendable {
     public init(session: GameSession, won: Bool, endDate: Date) {
         let log = session.log
         self.init(mode: session.puzzle.mode, tier: session.puzzle.grade.tier, puzzleID: session.puzzle.id, endDate: endDate,
-                  elapsed: session.elapsed, won: won, mistakes: log.highlightingUsed ? log.mistakes : nil,
+                  elapsed: session.elapsed, won: won, mistakes: Self.recordedMistakes(log),
                   hints: log.hints, checks: log.checks, reveals: log.reveals, assists: log.autoCandidates + log.cageHelper,
                   clean: won && log.isClean, techniques: session.puzzle.techniquesRequired)
+    }
+
+    /// Mistakes only count if highlighting was on; games saved before that was tracked
+    /// can only have mistakes if it was on, so a positive count also qualifies.
+    public static func recordedMistakes(_ log: AssistLog) -> Int? {
+        log.highlightingUsed || log.mistakes > 0 ? log.mistakes : nil
     }
 
     /// Wall-clock start, derived from play time.
@@ -117,7 +123,7 @@ public enum StatsCalculator {
             guard !list.isEmpty else { return nil }
             return (t, Double(list.filter { !$0.won }.count) / Double(list.count))
         }
-        .sorted { $0.1 > $1.1 }
+        .sorted { $0.1 != $1.1 ? $0.1 > $1.1 : $0.0 < $1.0 }
     }
 
     /// Won games' solve times in date order, for the progress chart.

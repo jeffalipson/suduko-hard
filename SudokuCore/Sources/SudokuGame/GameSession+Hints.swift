@@ -21,6 +21,7 @@ extension GameSession {
             n[cd.cell] = .empty
         }
         restore(Snapshot(entries: e, notes: n))
+        for cd in step.placements { removeNote(cd.digit, around: cd.cell) }
         log.hints["showMe", default: 0] += 1
         log.reveals += 1
     }

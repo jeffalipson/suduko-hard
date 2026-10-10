@@ -10,10 +10,9 @@ struct StatsView: View {
     @State private var mode: Mode = .classic
     @State private var chartTier: Tier = .hard
 
-    private var records: [GameRecordData] { stored.compactMap(\.data) }
-
     var body: some View {
-        NavigationStack {
+        let records = stored.compactMap(\.data)   // decoded once per render
+        return NavigationStack {
             List {
                 Picker("Mode", selection: $mode) {
                     Text("Classic").tag(Mode.classic)
@@ -23,7 +22,7 @@ struct StatsView: View {
                 .listRowBackground(Color.clear)
 
                 Section("By difficulty") {
-                    ForEach(Tier.allCases, id: \.self) { tier in tierRow(tier) }
+                    ForEach(Tier.allCases, id: \.self) { tier in tierRow(tier, records) }
                 }
 
                 Section("Progress") {
@@ -81,7 +80,7 @@ struct StatsView: View {
         }
     }
 
-    private func tierRow(_ tier: Tier) -> some View {
+    private func tierRow(_ tier: Tier, _ records: [GameRecordData]) -> some View {
         let s = StatsCalculator.tier(records, mode: mode, tier: tier)
         return VStack(alignment: .leading, spacing: 6) {
             Text(tier.name.capitalized).font(.headline)

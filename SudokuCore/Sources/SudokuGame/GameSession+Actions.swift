@@ -37,8 +37,8 @@ extension GameSession {
         flag((0..<81).filter(isWrong))
     }
 
-    /// Fills the selected cell with its solution digit.
-    public mutating func revealCell() {
+    /// Fills the selected cell with its solution digit (clearing it from peer notes when auto-remove is on).
+    public mutating func revealCell(settings: GameSettings = GameSettings()) {
         guard let cell = selected, !isGiven(cell), !isComplete, entries[cell] != puzzle.solution[cell] else { return }
         record()
         var e = entries
@@ -46,6 +46,7 @@ extension GameSession {
         var n = notes
         n[cell] = .empty
         restore(Snapshot(entries: e, notes: n))
+        if settings.autoRemoveCandidates { removeNote(puzzle.solution[cell], around: cell) }
         unflag(cell)
         log.reveals += 1
     }

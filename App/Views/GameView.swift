@@ -55,7 +55,8 @@ struct GameView: View {
             ZStack {
                 BoardView(session: s.wrappedValue, settings: model.settings,
                           spotlight: hintLevel >= 2 ? Set(hintStep?.patternCells ?? []) : [],
-                          pattern: hintLevel >= 2 ? (hintStep.map { $0.patternCandidates + $0.groups.flatMap { $0 } } ?? []) : []) { cell in
+                          pattern: hintLevel >= 2 ? (hintStep?.patternCandidates ?? []) : [],
+                          secondary: hintLevel >= 2 ? (hintStep?.groups.dropFirst(hintStep?.technique == .simpleColoring ? 1 : 0).flatMap { $0 } ?? []) : []) { cell in
                     s.wrappedValue.selected = cell
                 }
                 .opacity(s.wrappedValue.isPaused ? 0 : 1)
@@ -70,7 +71,7 @@ struct GameView: View {
                 }
             }
             .padding(.horizontal, 8)
-            if let diagnosis {
+            if let diagnosis, !s.wrappedValue.isPaused {
                 HintBar(diagnosis: diagnosis, level: hintLevel,
                         onSpotlight: {
                             hintLevel = 2
@@ -121,7 +122,7 @@ struct GameView: View {
                 Menu {
                     Button("Check Cell") { s.wrappedValue.checkCell(); changed(s.wrappedValue) }
                     Button("Check Puzzle") { s.wrappedValue.checkPuzzle(); changed(s.wrappedValue) }
-                    Button("Reveal Cell") { s.wrappedValue.revealCell(); changed(s.wrappedValue) }
+                    Button("Reveal Cell") { s.wrappedValue.revealCell(settings: model.settings); changed(s.wrappedValue) }
                 } label: { Image(systemName: "ellipsis.circle") }
                 .accessibilityIdentifier("gameMenu")
             }
