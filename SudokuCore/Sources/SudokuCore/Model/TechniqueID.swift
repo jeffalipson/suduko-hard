@@ -8,6 +8,8 @@ public enum TechniqueID: String, Codable, CaseIterable, Sendable {
     case finnedXWing, simpleColoring, finnedSwordfish, jellyfish
     case xCycle, xyChain, sueDeCoq, alsXZ, aic
     case cellForcingChain, unitForcingChain, digitForcingChain, nestedForcingChain
+    case cageCompletion, uniqueCageCombination, cageCombination
+    case innieOutie1, cageLockedDigit, innieOutie2, innieOutieMulti
 
     public var tier: Tier {
         switch self {
@@ -26,6 +28,16 @@ public enum TechniqueID: String, Codable, CaseIterable, Sendable {
             return .diabolical
         case .cellForcingChain, .unitForcingChain, .digitForcingChain, .nestedForcingChain:
             return .nightmare
+        case .cageCompletion, .uniqueCageCombination:
+            return .easy
+        case .cageCombination:
+            return .medium
+        case .innieOutie1:
+            return .hard
+        case .cageLockedDigit, .innieOutie2:
+            return .expert
+        case .innieOutieMulti:
+            return .fiendish
         }
     }
 
@@ -68,6 +80,13 @@ public enum TechniqueID: String, Codable, CaseIterable, Sendable {
         case .unitForcingChain: return 420
         case .digitForcingChain: return 450
         case .nestedForcingChain: return 500
+        case .cageCompletion: return 1
+        case .uniqueCageCombination: return 3
+        case .cageCombination: return 12
+        case .innieOutie1: return 40
+        case .cageLockedDigit: return 102
+        case .innieOutie2: return 105
+        case .innieOutieMulti: return 155
         }
     }
 
@@ -109,6 +128,24 @@ public enum TechniqueID: String, Codable, CaseIterable, Sendable {
         case .unitForcingChain: return "Unit Forcing Chain"
         case .digitForcingChain: return "Digit Forcing Chain"
         case .nestedForcingChain: return "Nested Forcing Chain"
+        case .cageCompletion: return "Cage Completion"
+        case .uniqueCageCombination: return "Unique Cage Combination"
+        case .cageCombination: return "Cage Combinations"
+        case .innieOutie1: return "45 Rule (One House)"
+        case .cageLockedDigit: return "Cage-Locked Digit"
+        case .innieOutie2: return "45 Rule (Two Houses)"
+        case .innieOutieMulti: return "45 Rule (Three+ Houses)"
+        }
+    }
+
+    /// Techniques that only apply to Killer puzzles.
+    public var isKillerOnly: Bool {
+        switch self {
+        case .cageCompletion, .uniqueCageCombination, .cageCombination,
+             .innieOutie1, .cageLockedDigit, .innieOutie2, .innieOutieMulti:
+            return true
+        default:
+            return false
         }
     }
 }
