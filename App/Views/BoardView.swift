@@ -10,6 +10,8 @@ struct BoardView: View {
     var spotlight: Set<Int> = []
     var marks: [CellDigit] = []
     var pattern: [CellDigit] = []
+    /// Digits a hint places, drawn in green in their empty cells.
+    var placed: [CellDigit] = []
     let onTap: (Int) -> Void
 
     var body: some View {
@@ -63,6 +65,9 @@ struct BoardView: View {
                 let color = session.isGiven(c) ? Theme.given : (wrong ? Theme.wrong : Theme.entry)
                 let text = Text("\(v)").font(.system(size: unit * 0.58, weight: session.isGiven(c) ? .semibold : .regular)).foregroundStyle(color)
                 ctx.draw(text, at: CGPoint(x: r.midX, y: r.midY + (session.puzzle.cages.isEmpty ? 0 : unit * 0.06)))
+            } else if let p = placed.first(where: { $0.cell == c }) {
+                let text = Text("\(p.digit)").font(.system(size: unit * 0.58, weight: .semibold)).foregroundStyle(Color.green)
+                ctx.draw(text, at: CGPoint(x: r.midX, y: r.midY))
             } else {
                 for d in session.notes[c].digits {
                     let col = CGFloat((d - 1) % 3), row = CGFloat((d - 1) / 3)

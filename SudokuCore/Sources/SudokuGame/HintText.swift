@@ -12,15 +12,21 @@ public enum HintText {
 
     public static func cell(_ c: Int) -> String { "r\(Geometry.row(c) + 1)c\(Geometry.col(c) + 1)" }
 
+    /// "an X-Wing", "an Empty Rectangle", "a Naked Pair".
+    static func article(_ name: String) -> String {
+        guard let first = name.first else { return "a" }
+        return "AEIOUX".contains(first) ? "an" : "a"
+    }
+
     public static func nudge(_ step: Step) -> String {
         let name = step.technique.displayName
         let digits = step.digits.isEmpty ? "" : " on \(step.digits.map(String.init).joined(separator: "/"))"
         if !step.regions.isEmpty {
             let places = step.regions.prefix(2).map(region).joined(separator: " and ")
-            return "Look for a\(name.first.map { "AEIOU".contains($0) } == true ? "n" : "") \(name)\(digits) in \(places)."
+            return "Look for \(article(name)) \(name)\(digits) in \(places)."
         }
         let around = step.patternCells.first.map { " around \(cell($0))" } ?? ""
-        return "Look for a\(name.first.map { "AEIOU".contains($0) } == true ? "n" : "") \(name)\(digits)\(around)."
+        return "Look for \(article(name)) \(name)\(digits)\(around)."
     }
 
     public static func message(_ d: HintDiagnosis) -> String {

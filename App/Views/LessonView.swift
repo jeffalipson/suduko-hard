@@ -18,7 +18,8 @@ struct LessonView: View {
                         BoardView(session: exampleSession(example), settings: GameSettings(),
                                   spotlight: phase >= 1 ? Set(example.step.patternCells) : [],
                                   marks: phase >= 2 ? example.step.eliminations : [],
-                                  pattern: phase >= 1 ? example.step.patternCandidates : []) { _ in }
+                                  pattern: phase >= 1 ? example.step.patternCandidates : [],
+                                  placed: phase >= 2 ? example.step.placements : []) { _ in }
                             .frame(maxWidth: .infinity)
                             .task {
                                 while !Task.isCancelled {
@@ -53,7 +54,9 @@ struct LessonView: View {
         switch phase {
         case 0: return "The position."
         case 1: return "The pattern."
-        default: return "What it removes."
+        default:
+            guard let step = example?.step else { return "" }
+            return step.placements.isEmpty ? "What it removes." : (step.eliminations.isEmpty ? "What it places." : "What it places and removes.")
         }
     }
 
