@@ -7,6 +7,7 @@ struct HomeView: View {
     @State private var mode: Mode = .classic
     @State private var playing: QueueKey?
     @State private var showSettings = false
+    @State private var generating: QueueKey?
 
     var body: some View {
         NavigationStack {
@@ -45,6 +46,17 @@ struct HomeView: View {
             .sheet(isPresented: $showSettings) { SettingsView() }
             .navigationDestination(item: $playing) { key in GameView(key: key) }
             .onAppear(perform: openFromLaunchArguments)
+            .overlay {
+                if let key = generating {
+                    VStack(spacing: 12) {
+                        ProgressView()
+                        Text("Generating a \(key.mode.rawValue) \(key.tier.name) puzzle…").font(.subheadline)
+                        Text("Hard tiers can take a minute or two.").font(.caption).foregroundStyle(.secondary)
+                    }
+                    .padding(24)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+                }
+            }
         }
     }
 
@@ -74,12 +86,25 @@ struct HomeView: View {
     }
 
     private func open(_ key: QueueKey) {
-        if model.resumable(key) == nil, model.startNew(key) == nil { return }
+        if model.resumable(key) == nil, model.startNew(key) == nil {
+            generate(key)
+            return
+        }
         playing = key
     }
 
+    private func generate(_ key: QueueKey) {
+        guard generating == nil else { return }
+        generating = key
+        Task {
+            let ok = await model.generateAndStart(key)
+            generating = nil
+            if ok { playing = key }
+        }
+    }
+
     private func startNew(_ key: QueueKey) {
-        guard model.startNew(key) != nil else { return }
+        guard model.startNew(key) != nil else { generate(key); return }
         playing = key
     }
 }

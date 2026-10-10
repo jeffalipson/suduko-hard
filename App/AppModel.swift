@@ -76,14 +76,7 @@ final class AppModel {
         refilling = true
         defer { refilling = false }
         for key in QueueKey.all where queues.deficit(key) > 0 {
-            let generated = await Task.detached(priority: .background) { () -> Puzzle? in
-                var rng = SystemRandomNumberGenerator()
-                let deadline = ContinuousClock.now + .seconds(60)
-                switch key.mode {
-                case .classic: return ClassicGenerator().generate(tier: key.tier, using: &rng, deadline: deadline)
-                case .killer: return KillerGenerator().generate(tier: key.tier, using: &rng, deadline: deadline)
-                }
-            }.value
+            let generated = await Task.detached(priority: .background) { AppModel.generate(key, seconds: 60) }.value
             if let generated {
                 queues.push(generated, for: key, using: &rng)
             } else {
@@ -91,5 +84,23 @@ final class AppModel {
             }
             save()
         }
+    }
+
+    nonisolated static func generate(_ key: QueueKey, seconds: Double) -> Puzzle? {
+        var rng = SystemRandomNumberGenerator()
+        let deadline = ContinuousClock.now + .seconds(seconds)
+        switch key.mode {
+        case .classic: return ClassicGenerator().generate(tier: key.tier, using: &rng, deadline: deadline)
+        case .killer: return KillerGenerator().generate(tier: key.tier, using: &rng, deadline: deadline)
+        }
+    }
+
+    /// For a tier with nothing queued and nothing in the library: generate one now and start it.
+    func generateAndStart(_ key: QueueKey) async -> Bool {
+        guard let puzzle = await Task.detached(priority: .userInitiated, operation: { AppModel.generate(key, seconds: 900) }).value else {
+            return false
+        }
+        queues.push(puzzle, for: key, using: &rng)
+        return startNew(key) != nil
     }
 }
