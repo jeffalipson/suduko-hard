@@ -18,11 +18,13 @@ import SudokuCore
         }
     }
 
-    @Test func unsupportedTierReturnsNilImmediately() {
-        var rng = SplitMix64(seed: 1)
-        let start = ContinuousClock.now
-        #expect(ClassicGenerator().generate(tier: .diabolical, using: &rng) == nil)
-        #expect(ContinuousClock.now - start < .seconds(1))
+    @Test(arguments: [Tier.diabolical, .nightmare])
+    func generatesChainTiers(tier: Tier) throws {
+        var rng = SplitMix64(seed: 3)
+        let p = try #require(ClassicGenerator().generate(tier: tier, using: &rng))
+        #expect(p.grade.tier == tier)
+        #expect(BruteForceSolver.countSolutions(p.givens) == 1)
+        #expect(Grader.grade(p.givens)?.grade == p.grade)
     }
 
     @Test func expiredDeadlineReturnsNil() {

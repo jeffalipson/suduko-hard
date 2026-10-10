@@ -16,9 +16,11 @@ import SudokuCore
         #expect(report.techniquesRequired.allSatisfy { $0.tier == .easy })
     }
 
-    @Test func stuckPuzzleHasNoGrade() {
-        // Needs techniques far beyond this plan's catalog.
-        #expect(LogicalSolver.classic.solve(Board(values: values(inkalaPuzzle))).solved == false)
+    @Test func inkalaIsBeyondNightmare() {
+        // Needs deeper nesting than any published tier: the full ladder progresses but stays ungraded.
+        let result = LogicalSolver.classic.solve(Board(values: values(inkalaPuzzle)))
+        #expect(!result.solved)
+        #expect(result.steps.contains { $0.technique.tier == .nightmare })
         #expect(Grader.grade(values(inkalaPuzzle)) == nil)
     }
 
@@ -33,7 +35,7 @@ import SudokuCore
     }
 
     @Test func maxTierOfClassicCatalog() {
-        #expect(LogicalSolver.classic.maxTier == .fiendish)
+        #expect(LogicalSolver.classic.maxTier == .nightmare)
     }
 
     @Test func catalogCoversEveryTechniqueOnceInTierOrder() {

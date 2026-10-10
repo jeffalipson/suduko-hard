@@ -92,8 +92,8 @@ Techniques are tried in a fixed order (easiest first, ties broken by weight).
 | Hard | Naked triple/quad, hidden triple/quad |
 | Expert | X-Wing, Swordfish, XY-Wing, Skyscraper, 2-String Kite, Unique Rectangle type 1 |
 | Fiendish | XYZ-Wing, W-Wing, Jellyfish, finned X-Wing/Swordfish, simple coloring, empty rectangle, UR types 2–4 |
-| Diabolical | X-Cycles, XY-Chain, AIC, ALS-XZ, Sue de Coq |
-| Nightmare | Forcing chains (cell, unit, digit), ALS chains, nested chains |
+| Diabolical | X-Cycles (single-digit alternating chains), XY-Chains, AIC, ALS-XZ, Sue de Coq |
+| Nightmare | Forcing chains (cell, unit, digit), nested forcing chains (propagating with Easy–Hard techniques) |
 
 ### 4.6 Killer techniques and tiers
 Killer puzzles may use every classic technique, plus:

@@ -40,5 +40,16 @@ public enum TechniqueCatalog {
         SimpleColoring(),
         FinnedFish(size: 3),
         BasicFish(size: 4),
+        // Diabolical
+        AlternatingChain.xCycle,
+        AlternatingChain.xyChain,
+        SueDeCoq(),
+        ALSXZ(),
+        AlternatingChain.aic,
+        // Nightmare
+        ForcingChain.cell,
+        ForcingChain.unit,
+        ForcingChain.digit,
+        ForcingChain.nested,
     ]
 }

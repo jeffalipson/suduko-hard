@@ -13,7 +13,8 @@ import SudokuCore
     }
 
     @Test func forcingChainsCrackInkalaWhereFiendishGetsStuck() throws {
-        let stuck = LogicalSolver.classic.solve(Board(values: values(inkalaPuzzle))).board
+        let fiendish = LogicalSolver(techniques: TechniqueCatalog.classic.filter { $0.id.tier <= .fiendish })
+        let stuck = fiendish.solve(Board(values: values(inkalaPuzzle))).board
         let solution = try #require(BruteForceSolver.solve(values(inkalaPuzzle)))
         let steps = [ForcingChain.cell, .unit, .digit, .nested].compactMap { $0.find(in: stuck) }
         #expect(!steps.isEmpty)
