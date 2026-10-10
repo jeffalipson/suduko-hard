@@ -44,7 +44,7 @@ func parse(_ args: [String]) -> Options {
             guard let s = UInt64(value) else { usage() }
             o.seed = s
         case "--timeout":
-            guard let t = Double(value), t > 0 else { usage() }
+            guard let t = Double(value), t > 0, t.isFinite, t <= 86_400 else { usage() }
             o.timeout = t
         default:
             usage()
@@ -90,7 +90,9 @@ guard tier <= maxTier else {
     exit(1)
 }
 
-var rng = SplitMix64(seed: options.seed ?? UInt64.random(in: .min ... .max))
+let seed = options.seed ?? UInt64.random(in: .min ... .max)
+log("seed \(seed)")   // rerun with --seed to reproduce
+var rng = SplitMix64(seed: seed)
 @MainActor func generate(_ tier: Tier, _ deadline: ContinuousClock.Instant) -> Puzzle? {
     switch options.mode {
     case .classic: return ClassicGenerator().generate(tier: tier, using: &rng, deadline: deadline)

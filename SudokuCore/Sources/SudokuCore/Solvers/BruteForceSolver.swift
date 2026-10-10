@@ -82,6 +82,7 @@ private struct SearchState {
         cageSumLeft = cages.map(\.sum)
         cageCellsLeft = cages.map(\.cells.count)
         for (i, cage) in cages.enumerated() {
+            guard !cage.cells.isEmpty || cage.sum == 0 else { return nil }
             for c in cage.cells {
                 guard (0..<81).contains(c), cageOf[c] == -1 else { return nil }
                 cageOf[c] = i

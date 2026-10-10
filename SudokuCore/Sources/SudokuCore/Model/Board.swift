@@ -48,8 +48,8 @@ public struct Board: Hashable, Sendable {
         for ch in chars {
             if ch == "." || ch == "0" {
                 out.append(0)
-            } else if let d = ch.wholeNumberValue, (1...9).contains(d) {
-                out.append(d)
+            } else if let ascii = ch.asciiValue, (49...57).contains(ascii) {   // "1"..."9" only
+                out.append(Int(ascii) - 48)
             } else {
                 return nil
             }
