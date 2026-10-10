@@ -1,0 +1,45 @@
+name: HardSudoku
+options:
+  bundleIdPrefix: com.jeffreylipson
+  deploymentTarget:
+    iOS: "17.0"
+packages:
+  SudokuCore:
+    path: SudokuCore
+targets:
+  HardSudoku:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+    dependencies:
+      - package: SudokuCore
+        product: SudokuCore
+      - package: SudokuCore
+        product: SudokuGame
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jeffreylipson.hardsudoku
+        SWIFT_VERSION: "6.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        MARKETING_VERSION: "0.1"
+        CURRENT_PROJECT_VERSION: "1"
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: Hard Sudoku
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UIBackgroundModes: [processing]
+        BGTaskSchedulerPermittedIdentifiers: [com.jeffreylipson.hardsudoku.refill]
+  HardSudokuUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: UITests
+    dependencies:
+      - target: HardSudoku
+    settings:
+      base:
+        SWIFT_VERSION: "6.0"
+        TEST_TARGET_NAME: HardSudoku

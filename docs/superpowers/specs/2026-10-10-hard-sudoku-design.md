@@ -18,6 +18,7 @@ A native iPhone app offering Classic and Killer Sudoku that goes well past NYT "
 - iOS 17+, Swift, SwiftUI, SwiftData, Swift Charts. Light and dark mode.
 - No server, no accounts, no iCloud sync (possible future work).
 - Fully offline.
+- Saved games, settings and queues persist as one Codable JSON file in Application Support; SwiftData is used for stats.
 
 ## 3. Architecture
 
