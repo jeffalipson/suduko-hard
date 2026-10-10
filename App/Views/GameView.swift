@@ -20,7 +20,12 @@ struct GameView: View {
                 ProgressView()
             }
         }
-        .onAppear { session = model.resumable(key) }
+        .onAppear {
+            // Opening a game (new or resumed) starts the clock; pausing only applies while away.
+            guard var s = model.resumable(key) else { return }
+            s.setPaused(false)
+            session = s
+        }
         .onReceive(timer) { _ in
             // Only advances the clock; the game is saved on moves and when the app leaves the foreground.
             guard phase == .active, var s = session, !s.isComplete else { return }
