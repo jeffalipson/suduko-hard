@@ -16,6 +16,8 @@ final class AppModel {
     let library: PuzzleLibrary
     private var rng = SystemRandomNumberGenerator()
     private var refilling = false
+    /// Set by the background task's expiration handler to stop between keys.
+    private var cancelRefill = false
 
     init() {
         let state = Persistence.load()
@@ -23,15 +25,25 @@ final class AppModel {
         queues = state.queues
         games = state.games
         library = PuzzleLibrary.load(from: Bundle.main.resourceURL!)
-        // Nothing should ever wait: top every queue up from the library right away.
-        queues.fillAllFromLibrary(library, using: &rng)
+        // Nothing should wait: give empty queues one library puzzle; generation fills the rest.
+        queues.ensureNotEmpty(library: library, using: &rng)
         save()
         AppModel.shared = self
-        BGTaskScheduler.shared.register(forTaskWithIdentifier: Self.refillTaskID, using: nil) { task in
-            Task { @MainActor in
-                await AppModel.shared?.refillLoop()
-                task.setTaskCompleted(success: true)
-            }
+        // The handler runs on the main queue, matching the closure's main-actor isolation.
+        BGTaskScheduler.shared.register(forTaskWithIdentifier: Self.refillTaskID, using: .main) { task in
+            MainActor.assumeIsolated { AppModel.shared?.runBackgroundRefill(task) }
+        }
+    }
+
+    private func runBackgroundRefill(_ task: BGTask) {
+        cancelRefill = false
+        task.expirationHandler = {
+            Task { @MainActor in AppModel.shared?.cancelRefill = true }
+        }
+        Task {
+            await refillLoop()
+            task.setTaskCompleted(success: !cancelRefill)
+            scheduleBackgroundRefill()
         }
     }
 
@@ -56,7 +68,9 @@ final class AppModel {
         return session
     }
 
+    /// Saves an in-progress game. Finished games are never written back.
     func update(_ session: GameSession, for key: QueueKey) {
+        guard !session.isComplete else { return }
         games[key.name] = session
         save()
     }
@@ -70,19 +84,28 @@ final class AppModel {
         Persistence.save(SavedState(settings: settings, queues: queues, games: games))
     }
 
-    /// Tops queues up with freshly generated puzzles (falling back to the library) off the main actor.
+    /// Tops queues up with freshly generated puzzles (falling back to the library), generating off
+    /// the main actor. Repeats passes until every queue is full, a pass adds nothing, or the
+    /// background task expires.
     func refillLoop() async {
         guard !refilling else { return }
         refilling = true
         defer { refilling = false }
-        for key in QueueKey.all where queues.deficit(key) > 0 {
-            let generated = await Task.detached(priority: .background) { AppModel.generate(key, seconds: 60) }.value
-            if let generated {
-                queues.push(generated, for: key, using: &rng)
-            } else {
-                queues.refillFromLibrary(key, library: library, using: &rng)
+        var progressed = true
+        while progressed && !cancelRefill {
+            progressed = false
+            for key in QueueKey.all where queues.deficit(key) > 0 && !cancelRefill {
+                let before = queues.count(key)
+                if let generated = await Task.detached(priority: .background, operation: { AppModel.generate(key, seconds: 60) }).value {
+                    queues.push(generated, for: key, using: &rng)
+                } else {
+                    queues.refillFromLibrary(key, library: library, using: &rng)
+                }
+                if queues.count(key) > before {
+                    progressed = true
+                    save()
+                }
             }
-            save()
         }
     }
 

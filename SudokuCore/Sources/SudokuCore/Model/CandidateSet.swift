@@ -1,5 +1,5 @@
 /// A set of Sudoku digits 1...9 stored as a bitmask (bit d = digit d).
-public struct CandidateSet: Hashable, Sendable, Codable, CustomStringConvertible {
+public struct CandidateSet: Hashable, Sendable, CustomStringConvertible {
     public var raw: UInt16
 
     static let allMask: UInt16 = 0b11_1111_1110
@@ -32,4 +32,22 @@ public struct CandidateSet: Hashable, Sendable, Codable, CustomStringConvertible
     public func subtracting(_ other: CandidateSet) -> CandidateSet { CandidateSet(raw: raw & ~other.raw) }
 
     public var description: String { digits.map(String.init).joined() }
+}
+
+/// Encodes as a bare number (compact for saved games); also reads the older {"raw": n} form.
+extension CandidateSet: Codable {
+    private enum Keys: String, CodingKey { case raw }
+
+    public init(from decoder: any Decoder) throws {
+        if let single = try? decoder.singleValueContainer(), let raw = try? single.decode(UInt16.self) {
+            self.init(raw: raw)
+        } else {
+            self.init(raw: try decoder.container(keyedBy: Keys.self).decode(UInt16.self, forKey: .raw))
+        }
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var c = encoder.singleValueContainer()
+        try c.encode(raw)
+    }
 }

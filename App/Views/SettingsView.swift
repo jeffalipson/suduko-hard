@@ -9,10 +9,12 @@ struct SettingsView: View {
         @Bindable var model = model
         NavigationStack {
             Form {
-                Section("Assists (count against a clean solve)") {
+                Section("Assists (using them counts against a clean solve)") {
                     Toggle("Auto-candidates button", isOn: $model.settings.autoCandidates)
-                    Toggle("Mistake highlighting", isOn: $model.settings.mistakeHighlighting)
                     Toggle("Killer cage helper", isOn: $model.settings.cageHelper)
+                }
+                Section("Mistakes") {
+                    Toggle("Mistake highlighting", isOn: $model.settings.mistakeHighlighting)
                 }
                 Section("Convenience") {
                     Toggle("Auto-remove candidates", isOn: $model.settings.autoRemoveCandidates)

@@ -8,6 +8,8 @@ struct HomeView: View {
     @State private var playing: QueueKey?
     @State private var showSettings = false
     @State private var generating: QueueKey?
+    @State private var generationTask: Task<Void, Never>?
+    @State private var generationFailed = false
 
     var body: some View {
         NavigationStack {
@@ -46,15 +48,24 @@ struct HomeView: View {
             .sheet(isPresented: $showSettings) { SettingsView() }
             .navigationDestination(item: $playing) { key in GameView(key: key) }
             .onAppear(perform: openFromLaunchArguments)
+            .alert("Couldn't make a puzzle in time", isPresented: $generationFailed) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Background generation keeps trying. Check back in a few minutes.")
+            }
             .overlay {
                 if let key = generating {
-                    VStack(spacing: 12) {
-                        ProgressView()
-                        Text("Generating a \(key.mode.rawValue) \(key.tier.name) puzzle…").font(.subheadline)
-                        Text("Hard tiers can take a minute or two.").font(.caption).foregroundStyle(.secondary)
+                    ZStack {
+                        Color.black.opacity(0.15).ignoresSafeArea()   // blocks taps on other rows
+                        VStack(spacing: 12) {
+                            ProgressView()
+                            Text("Generating a \(key.mode.rawValue) \(key.tier.name) puzzle…").font(.subheadline)
+                            Text("Hard tiers can take a minute or two.").font(.caption).foregroundStyle(.secondary)
+                            Button("Cancel") { generationTask?.cancel(); generating = nil }
+                        }
+                        .padding(24)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
                     }
-                    .padding(24)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
                 }
             }
         }
@@ -96,10 +107,11 @@ struct HomeView: View {
     private func generate(_ key: QueueKey) {
         guard generating == nil else { return }
         generating = key
-        Task {
+        generationTask = Task {
             let ok = await model.generateAndStart(key)
+            guard !Task.isCancelled else { return }
             generating = nil
-            if ok { playing = key }
+            if ok { playing = key } else { generationFailed = true }
         }
     }
 

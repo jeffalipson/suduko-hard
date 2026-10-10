@@ -2,13 +2,13 @@ import SudokuCore
 
 extension GameSession {
     public mutating func undo() {
-        guard let previous = undoStack.popLast() else { return }
+        guard !isComplete, let previous = undoStack.popLast() else { return }
         redoStack.append(Snapshot(entries: entries, notes: notes))
         restore(previous)
     }
 
     public mutating func redo() {
-        guard let next = redoStack.popLast() else { return }
+        guard !isComplete, let next = redoStack.popLast() else { return }
         undoStack.append(Snapshot(entries: entries, notes: notes))
         restore(next)
     }
@@ -39,7 +39,7 @@ extension GameSession {
 
     /// Fills the selected cell with its solution digit.
     public mutating func revealCell() {
-        guard let cell = selected, !isGiven(cell), entries[cell] != puzzle.solution[cell] else { return }
+        guard let cell = selected, !isGiven(cell), !isComplete, entries[cell] != puzzle.solution[cell] else { return }
         record()
         var e = entries
         e[cell] = puzzle.solution[cell]

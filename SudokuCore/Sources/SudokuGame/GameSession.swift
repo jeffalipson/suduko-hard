@@ -17,6 +17,19 @@ public struct AssistLog: Codable, Equatable, Sendable {
 
     public init() {}
 
+    private enum CodingKeys: String, CodingKey { case mistakes, checks, reveals, autoCandidates, cageHelper, hints }
+
+    /// Missing keys decode as zero so older save files keep working.
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        mistakes = try c.decodeIfPresent(Int.self, forKey: .mistakes) ?? 0
+        checks = try c.decodeIfPresent(Int.self, forKey: .checks) ?? 0
+        reveals = try c.decodeIfPresent(Int.self, forKey: .reveals) ?? 0
+        autoCandidates = try c.decodeIfPresent(Int.self, forKey: .autoCandidates) ?? 0
+        cageHelper = try c.decodeIfPresent(Int.self, forKey: .cageHelper) ?? 0
+        hints = try c.decodeIfPresent([String: Int].self, forKey: .hints) ?? [:]
+    }
+
     public var isClean: Bool {
         checks == 0 && reveals == 0 && autoCandidates == 0 && cageHelper == 0 && hints.values.allSatisfy { $0 == 0 }
     }
@@ -78,7 +91,7 @@ public struct GameSession: Codable, Equatable, Sendable {
 
     /// Clears the selected cell's digit, or its notes when it has no digit.
     public mutating func erase() {
-        guard let cell = selected, !isGiven(cell), entries[cell] != 0 || !notes[cell].isEmpty else { return }
+        guard let cell = selected, !isGiven(cell), !isComplete, entries[cell] != 0 || !notes[cell].isEmpty else { return }
         record()
         if entries[cell] != 0 { entries[cell] = 0 } else { notes[cell] = .empty }
         flaggedWrong.remove(cell)
@@ -100,6 +113,7 @@ public struct GameSession: Codable, Equatable, Sendable {
     mutating func restore(_ s: Snapshot) {
         entries = s.entries
         notes = s.notes
+        flaggedWrong = flaggedWrong.filter(isWrong)
     }
 
     public mutating func setPaused(_ paused: Bool) { isPaused = paused }
