@@ -55,6 +55,20 @@ func parse(_ args: [String]) -> Options {
     return o
 }
 
+if CommandLine.arguments.count == 3, CommandLine.arguments[1] == "--lessons" {
+    var lessons: [LessonExample] = []
+    for id in TechniqueID.allCases {
+        if let lesson = LessonFinder.find(id, seeds: 1..<400) {
+            lessons.append(lesson)
+            log("lesson \(id.rawValue): found")
+        } else {
+            log("lesson \(id.rawValue): none")
+        }
+    }
+    try JSONEncoder().encode(lessons).write(to: URL(fileURLWithPath: CommandLine.arguments[2]), options: .atomic)
+    exit(0)
+}
+
 let options = parse(Array(CommandLine.arguments.dropFirst()))
 let tier = options.tier!
 
