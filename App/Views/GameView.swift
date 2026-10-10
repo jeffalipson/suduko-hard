@@ -22,13 +22,13 @@ struct GameView: View {
         }
         .onAppear { session = model.resumable(key) }
         .onReceive(timer) { _ in
-            guard phase == .active, var s = session else { return }
+            // Only advances the clock; the game is saved on moves and when the app leaves the foreground.
+            guard phase == .active, var s = session, !s.isComplete else { return }
             s.tick(1)
             session = s
-            if Int(s.elapsed) % 5 == 0 { model.update(s, for: key) }
         }
         .onChange(of: phase) { _, new in
-            if new != .active, var s = session { s.setPaused(true); session = s; model.update(s, for: key) }
+            if new != .active, var s = session, !s.isComplete { s.setPaused(true); session = s; model.update(s, for: key) }
         }
     }
 
@@ -43,6 +43,7 @@ struct GameView: View {
                 if s.wrappedValue.isPaused {
                     Button {
                         s.wrappedValue.setPaused(false)
+                        model.update(s.wrappedValue, for: key)
                     } label: {
                         Label("Resume", systemImage: "play.fill").font(.title2)
                     }
@@ -92,7 +93,9 @@ struct GameView: View {
             showCompletion = true
         } else {
             model.update(s, for: key)
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            if let cell = s.selected, model.settings.mistakeHighlighting, s.isWrong(cell) {
+                UINotificationFeedbackGenerator().notificationOccurred(.error)
+            }
         }
     }
 

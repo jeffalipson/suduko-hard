@@ -22,6 +22,7 @@ struct ControlsView: View {
                     let done = session.placedCount(of: d) >= 9
                     Button {
                         session.input(d, settings: settings)
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         onChange()
                     } label: {
                         Text("\(d)")

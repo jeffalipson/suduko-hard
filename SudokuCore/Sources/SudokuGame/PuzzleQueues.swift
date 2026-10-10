@@ -27,9 +27,19 @@ public struct PuzzleQueues: Codable, Equatable, Sendable {
 
     /// Tops `key` up from the library in this install's shuffled order, reshuffling when exhausted.
     public mutating func refillFromLibrary<R: RandomNumberGenerator>(_ key: QueueKey, library: PuzzleLibrary, using rng: inout R) {
+        refillFromLibrary(key, library: library, upTo: Self.target, using: &rng)
+    }
+
+    /// Launch top-up: give every empty queue one library puzzle so nothing waits,
+    /// leaving the rest of each queue for freshly generated puzzles.
+    public mutating func ensureNotEmpty<R: RandomNumberGenerator>(library: PuzzleLibrary, using rng: inout R) {
+        for key in QueueKey.all where count(key) == 0 { refillFromLibrary(key, library: library, upTo: 1, using: &rng) }
+    }
+
+    mutating func refillFromLibrary<R: RandomNumberGenerator>(_ key: QueueKey, library: PuzzleLibrary, upTo limit: Int, using rng: inout R) {
         let pool = library.puzzles[key] ?? []
         guard !pool.isEmpty else { return }
-        while deficit(key) > 0 {
+        while count(key) < limit {
             var indices = order[key.name] ?? []
             var at = cursor[key.name] ?? 0
             if indices.count != pool.count || at >= indices.count {
