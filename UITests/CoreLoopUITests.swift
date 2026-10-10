@@ -40,3 +40,13 @@ final class HintUITests: XCTestCase {
         XCTAssertTrue(app.buttons["undo"].isEnabled)
     }
 }
+
+final class StatsUITests: XCTestCase {
+    func testStatsOpens() {
+        let app = XCUIApplication()
+        app.launch()
+        XCTAssertTrue(app.buttons["statsButton"].waitForExistence(timeout: 10))
+        app.buttons["statsButton"].tap()
+        XCTAssertTrue(app.navigationBars["Stats"].waitForExistence(timeout: 5))
+    }
+}

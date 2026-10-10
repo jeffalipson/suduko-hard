@@ -7,6 +7,7 @@ struct HomeView: View {
     @State private var mode: Mode = .classic
     @State private var playing: QueueKey?
     @State private var showSettings = false
+    @State private var showStats = false
     @State private var generating: QueueKey?
     @State private var generationTask: Task<Void, Never>?
     @State private var generationFailed = false
@@ -41,11 +42,12 @@ struct HomeView: View {
                         .accessibilityIdentifier("settingsButton")
                 }
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Stats", systemImage: "chart.bar") {}
-                        .disabled(true)   // Plan 7
+                    Button("Stats", systemImage: "chart.bar") { showStats = true }
+                        .accessibilityIdentifier("statsButton")
                 }
             }
             .sheet(isPresented: $showSettings) { SettingsView() }
+            .sheet(isPresented: $showStats) { StatsView() }
             .navigationDestination(item: $playing) { key in GameView(key: key) }
             .onAppear(perform: openFromLaunchArguments)
             .alert("Couldn't make a puzzle in time", isPresented: $generationFailed) {
@@ -90,6 +92,7 @@ struct HomeView: View {
     /// `-open killer-hard` jumps straight into a game (used for screenshots and UI tests).
     private func openFromLaunchArguments() {
         let args = ProcessInfo.processInfo.arguments
+        if args.contains("-stats") { showStats = true }
         guard let i = args.firstIndex(of: "-open"), i + 1 < args.count,
               let key = QueueKey.all.first(where: { $0.name == args[i + 1] }) else { return }
         mode = key.mode

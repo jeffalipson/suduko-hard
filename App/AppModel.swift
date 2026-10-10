@@ -2,6 +2,7 @@ import BackgroundTasks
 import Foundation
 import Observation
 import SudokuCore
+import SwiftData
 import SudokuGame
 
 @Observable @MainActor
@@ -14,6 +15,7 @@ final class AppModel {
     private(set) var queues: PuzzleQueues
     private(set) var games: [String: GameSession]
     let library: PuzzleLibrary
+    let container: ModelContainer = try! ModelContainer(for: GameRecord.self)
     let lessons: [TechniqueID: LessonExample] = {
         guard let url = Bundle.main.url(forResource: "lessons", withExtension: "json"),
               let data = try? Data(contentsOf: url),
@@ -67,6 +69,8 @@ final class AppModel {
     func startNew(_ key: QueueKey) -> GameSession? {
         if queues.count(key) == 0 { queues.refillFromLibrary(key, library: library, using: &rng) }
         guard let puzzle = queues.pop(key) else { return nil }
+        // Replacing an unfinished game abandons it.
+        if let old = games[key.name], !old.isComplete { record(old, won: false) }
         let session = GameSession(puzzle: puzzle)
         games[key.name] = session
         save()
@@ -82,8 +86,15 @@ final class AppModel {
     }
 
     func finish(_ session: GameSession, for key: QueueKey) {
+        record(session, won: true)
         games[key.name] = nil
         save()
+    }
+
+    /// Stores a finished or abandoned game for stats.
+    private func record(_ session: GameSession, won: Bool) {
+        container.mainContext.insert(GameRecord(GameRecordData(session: session, won: won, endDate: .now)))
+        try? container.mainContext.save()
     }
 
     func save() {

@@ -9,6 +9,7 @@ struct HardSudokuApp: App {
         WindowGroup {
             HomeView()
                 .environment(model)
+                .modelContainer(model.container)
                 .task { await model.refillLoop() }
         }
         .onChange(of: phase) { _, new in
