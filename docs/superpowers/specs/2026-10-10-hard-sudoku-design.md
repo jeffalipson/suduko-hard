@@ -205,7 +205,7 @@ One curated example board plus explanation per technique (~35 lessons). Stored a
 ## 8. Stats
 
 ### 8.1 Recorded per game (SwiftData `GameRecord`)
-mode, tier, puzzle id, start/end date, elapsed time, outcome (won/abandoned), mistakes (wrong digits placed, counted whether or not highlighting is on), hint counts per level (nudge/spotlight/lesson/show-me), checks, reveals, assists used (auto-candidates, cage helper), clean solve flag (won with zero hints, checks, reveals, and assists), techniquesRequired.
+mode, tier, puzzle id, start/end date, elapsed time, outcome (won/abandoned), mistakes (wrong digits placed; counted only while mistake highlighting is on, otherwise recorded as nil and excluded from mistake stats), hint counts per level (nudge/spotlight/lesson/show-me), checks, reveals, assists used (auto-candidates, cage helper), clean solve flag (won with zero hints, checks, reveals, and assists), techniquesRequired.
 
 A game counts as abandoned when the player starts a new game in the same mode × tier while one is unfinished.
 
