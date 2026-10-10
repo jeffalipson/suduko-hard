@@ -8,6 +8,7 @@ struct HomeView: View {
     @State private var playing: QueueKey?
     @State private var showSettings = false
     @State private var showStats = false
+    @State private var debugLesson: TechniqueID?
     @State private var generating: QueueKey?
     @State private var generationTask: Task<Void, Never>?
     @State private var generationFailed = false
@@ -48,6 +49,9 @@ struct HomeView: View {
             }
             .sheet(isPresented: $showSettings) { SettingsView() }
             .sheet(isPresented: $showStats) { StatsView() }
+            .sheet(item: $debugLesson) { id in
+                LessonView(technique: id, example: model.lessons[id]) {}
+            }
             .navigationDestination(item: $playing) { key in GameView(key: key) }
             .onAppear(perform: openFromLaunchArguments)
             .alert("Couldn't make a puzzle in time", isPresented: $generationFailed) {
@@ -93,6 +97,7 @@ struct HomeView: View {
     private func openFromLaunchArguments() {
         let args = ProcessInfo.processInfo.arguments
         if args.contains("-stats") { showStats = true }
+        if let i = args.firstIndex(of: "-lesson"), i + 1 < args.count { debugLesson = TechniqueID(rawValue: args[i + 1]) }
         guard let i = args.firstIndex(of: "-open"), i + 1 < args.count,
               let key = QueueKey.all.first(where: { $0.name == args[i + 1] }) else { return }
         mode = key.mode
