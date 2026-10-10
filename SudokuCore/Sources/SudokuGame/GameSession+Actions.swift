@@ -3,13 +3,13 @@ import SudokuCore
 extension GameSession {
     public mutating func undo() {
         guard !isComplete, let previous = undoStack.popLast() else { return }
-        redoStack.append(Snapshot(entries: entries, notes: notes))
+        redoStack.append(Snapshot(entries: entries, notes: notes, removed: removals))
         restore(previous)
     }
 
     public mutating func redo() {
         guard !isComplete, let next = redoStack.popLast() else { return }
-        undoStack.append(Snapshot(entries: entries, notes: notes))
+        undoStack.append(Snapshot(entries: entries, notes: notes, removed: removals))
         restore(next)
     }
 

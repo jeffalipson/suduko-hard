@@ -18,6 +18,16 @@ struct ControlsView: View {
                 .pickerStyle(.segmented)
                 .accessibilityIdentifier("inputMode")
             }
+            Button {
+                session.setAutoCandidates(!session.autoCandidateMode)
+                onChange()
+            } label: {
+                Label("Auto candidates", systemImage: session.autoCandidateMode ? "checkmark.square.fill" : "square")
+                    .font(.subheadline)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .accessibilityIdentifier("autoCandidates")
+            .accessibilityValue(session.autoCandidateMode ? "on" : "off")
             HStack(spacing: 6) {
                 ForEach(1...9, id: \.self) { d in
                     let done = session.placedCount(of: d) >= 9
@@ -39,9 +49,6 @@ struct ControlsView: View {
                 tool("Undo", "arrow.uturn.backward", id: "undo", enabled: session.canUndo) { session.undo() }
                 tool("Redo", "arrow.uturn.forward", id: "redo", enabled: session.canRedo) { session.redo() }
                 tool("Erase", "eraser", id: "erase") { session.erase() }
-                if settings.autoCandidates {
-                    tool("Auto", "square.grid.3x3", id: "autoCandidates") { session.fillAllCandidates() }
-                }
                 if settings.cageHelper && !session.puzzle.cages.isEmpty {
                     tool("Cage", "sum", id: "cageHelper", enabled: session.selected != nil) {
                         session.useCageHelper()

@@ -79,3 +79,19 @@ final class NewGameConfirmationUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Start a new game?"].waitForExistence(timeout: 5))
     }
 }
+
+final class AutoCandidateUITests: XCTestCase {
+    func testCheckboxShowsAndHidesCandidates() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uitest", "-open", "classic-hard", "-new"]
+        app.launch()
+        let toggle = app.buttons["autoCandidates"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 15))
+        let withCandidates = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS 'Candidates'"))
+        XCTAssertEqual(withCandidates.count, 0)
+        toggle.tap()
+        XCTAssertGreaterThan(withCandidates.count, 0)
+        toggle.tap()
+        XCTAssertEqual(withCandidates.count, 0)
+    }
+}

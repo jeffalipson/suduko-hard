@@ -43,6 +43,8 @@ public struct GameSession: Codable, Equatable, Sendable {
     struct Snapshot: Codable, Equatable, Sendable {
         let entries: [Int]
         let notes: [CandidateSet]
+        /// Auto-candidate removals at the time (nil: leave them as they are).
+        var removed: [CandidateSet]? = nil
     }
 
     public let puzzle: Puzzle
@@ -57,6 +59,11 @@ public struct GameSession: Codable, Equatable, Sendable {
     public private(set) var flaggedWrong: Set<Int> = []
     /// When the game was created (nil for games saved before this was recorded).
     public private(set) var startedAt: Date?
+    /// Auto candidate mode: show every possible candidate, minus the player's manual removals.
+    /// Optional so games saved before this existed still load.
+    var autoMode: Bool?
+    /// Candidates the player removed by hand while in auto candidate mode (kept when toggling).
+    var removedMarks: [CandidateSet]?
     var undoStack: [Snapshot] = []
     var redoStack: [Snapshot] = []
 
@@ -93,7 +100,15 @@ public struct GameSession: Codable, Equatable, Sendable {
         case .candidate:
             guard entries[cell] == 0 else { return }
             record()
-            if notes[cell].contains(digit) { notes[cell].remove(digit) } else { notes[cell].insert(digit) }
+            if autoCandidateMode {
+                var r = removals
+                if r[cell].contains(digit) { r[cell].remove(digit) } else { r[cell].insert(digit) }
+                removedMarks = r
+            } else if notes[cell].contains(digit) {
+                notes[cell].remove(digit)
+            } else {
+                notes[cell].insert(digit)
+            }
         }
     }
 
@@ -114,13 +129,14 @@ public struct GameSession: Codable, Equatable, Sendable {
 
     /// Saves the current state for undo and clears redo.
     mutating func record() {
-        undoStack.append(Snapshot(entries: entries, notes: notes))
+        undoStack.append(Snapshot(entries: entries, notes: notes, removed: removals))
         redoStack.removeAll()
     }
 
     mutating func restore(_ s: Snapshot) {
         entries = s.entries
         notes = s.notes
+        if let r = s.removed { removedMarks = r }
         flaggedWrong = flaggedWrong.filter(isWrong)
     }
 

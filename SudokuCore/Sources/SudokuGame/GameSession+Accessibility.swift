@@ -9,8 +9,9 @@ extension GameSession {
             parts.append(isGiven(cell) ? "\(v), given." : "\(v).")
         } else {
             parts.append("Empty.")
-            if !notes[cell].isEmpty {
-                parts.append("Candidates \(notes[cell].digits.map(String.init).joined(separator: ", ")).")
+            let shown = displayedNotes(cell)
+            if !shown.isEmpty {
+                parts.append("Candidates \(shown.digits.map(String.init).joined(separator: ", ")).")
             }
         }
         if let index = cageIndex(of: cell) {

@@ -12,7 +12,7 @@ extension GameSession {
         let board = HintEngine.playerBoard(self)
         var e = entries
         var n = notes
-        for cd in step.eliminations where e[cd.cell] == 0 {
+        for cd in step.eliminations where e[cd.cell] == 0 && !autoCandidateMode {
             if n[cd.cell].isEmpty { n[cd.cell] = board.candidates[cd.cell] }
             n[cd.cell].remove(cd.digit)
         }
@@ -21,6 +21,7 @@ extension GameSession {
             n[cd.cell] = .empty
         }
         restore(Snapshot(entries: e, notes: n))
+        if autoCandidateMode { removeShown(step.eliminations) }
         // Always tidy peers (unlike Reveal, which follows the auto-remove setting): a hint step should
         // leave the board consistent for the next hint.
         for cd in step.placements { removeNote(cd.digit, around: cd.cell) }

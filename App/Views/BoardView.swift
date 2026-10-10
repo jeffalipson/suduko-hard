@@ -76,7 +76,8 @@ struct BoardView: View {
         // Cages.
         if !session.puzzle.cages.isEmpty { drawCages(in: &ctx, unit: unit) }
 
-        // Digits and notes.
+        // Digits and notes (auto candidates or the player's own).
+        let shown = session.displayedNotes()
         for c in 0..<81 {
             let r = rect(c, unit)
             let v = session.entries[c]
@@ -89,7 +90,7 @@ struct BoardView: View {
                 let text = Text("\(p.digit)").font(.system(size: unit * 0.58, weight: .semibold)).foregroundStyle(Color.green)
                 ctx.draw(text, at: CGPoint(x: r.midX, y: r.midY))
             } else {
-                for d in session.notes[c].digits {
+                for d in shown[c].digits {
                     let col = CGFloat((d - 1) % 3), row = CGFloat((d - 1) / 3)
                     let inset = session.puzzle.cages.isEmpty ? unit * 0.06 : unit * 0.14
                     let w = (unit - 2 * inset) / 3

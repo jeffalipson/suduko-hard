@@ -10,7 +10,6 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 Section("Assists (using them counts against a clean solve)") {
-                    Toggle("Auto-candidates button", isOn: $model.settings.autoCandidates)
                     Toggle("Killer cage helper", isOn: $model.settings.cageHelper)
                 }
                 Section("Mistakes") {

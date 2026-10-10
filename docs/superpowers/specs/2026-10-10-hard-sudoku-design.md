@@ -173,7 +173,7 @@ That gives ~1.2 × 10¹² variants per classic puzzle. Cages transform with thei
 
 | Setting | Default |
 |---|---|
-| Auto-candidates button (fills all candidates; logged as assist) | Off |
+| Auto candidates checkbox (on the game screen: shows every possible candidate, kept current as digits are placed; manual removals are remembered across toggling; turning it on is logged once as an assist) | Off |
 | Auto-remove candidates on placement | Off |
 | Mistake highlighting (wrong digits shown red immediately) | Off |
 | Killer cage helper (tap cage → valid combinations, impossible ones struck out; logged as assist) | Off |

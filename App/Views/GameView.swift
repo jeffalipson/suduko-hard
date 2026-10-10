@@ -36,6 +36,7 @@ struct GameView: View {
             // Opening a game (new or resumed) starts the clock; pausing only applies while away.
             guard var s = model.resumable(key) else { return }
             s.setPaused(false)
+            if ProcessInfo.processInfo.arguments.contains("-auto") { s.setAutoCandidates(true) }   // screenshots
             session = s
         }
         .onReceive(timer) { _ in

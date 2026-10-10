@@ -17,8 +17,9 @@ public enum HintEngine {
     public static func diagnose(_ session: GameSession) -> HintDiagnosis {
         if session.isComplete { return .solved }
         for c in 0..<81 where session.entries[c] != 0 && session.isWrong(c) { return .mistake }
-        for c in 0..<81 where session.entries[c] == 0 && !session.notes[c].isEmpty {
-            if !session.notes[c].contains(session.puzzle.solution[c]) { return .mistake }
+        let shown = session.displayedNotes()
+        for c in 0..<81 where session.entries[c] == 0 && !shown[c].isEmpty {
+            if !shown[c].contains(session.puzzle.solution[c]) { return .mistake }
         }
         let board = playerBoard(session)
         let solver: LogicalSolver = session.puzzle.mode == .classic ? .classic : .killer
@@ -27,7 +28,7 @@ public enum HintEngine {
             // The pattern must be visible in the player's notes; eliminations can land on bare cells
             // (Show me fills them in), so they don't need notes.
             let pattern = step.patternCells + step.patternCandidates.map(\.cell)
-            if let bare = pattern.first(where: { session.entries[$0] == 0 && session.notes[$0].isEmpty }) {
+            if let bare = pattern.first(where: { session.entries[$0] == 0 && shown[$0].isEmpty }) {
                 // Name a region that actually contains the bare cell, so filling it in makes progress.
                 return .incomplete(step.regions.first { $0.cells.contains(bare) } ?? .box(Geometry.box(bare)))
             }
@@ -38,8 +39,9 @@ public enum HintEngine {
     /// The player's position: their digits, and their notes (minus stale digits) where they made any.
     public static func playerBoard(_ session: GameSession) -> Board {
         var board = Board(values: session.entries, cages: session.puzzle.cages)
-        for c in 0..<81 where session.entries[c] == 0 && !session.notes[c].isEmpty {
-            board.candidates[c] = session.notes[c].intersection(board.candidates[c])
+        let shown = session.displayedNotes()
+        for c in 0..<81 where session.entries[c] == 0 && !shown[c].isEmpty {
+            board.candidates[c] = shown[c].intersection(board.candidates[c])
         }
         return board
     }
