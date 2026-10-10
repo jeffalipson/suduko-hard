@@ -29,4 +29,13 @@ extension GameSession {
         for cd in eliminations { r[cd.cell].insert(cd.digit) }
         removedMarks = r
     }
+
+    /// In auto candidate mode, the player removed this empty cell's answer by hand — a real error
+    /// that Check flags. (The player's own pencil marks are free-form and never count as wrong.)
+    public func ruledOutAnswer(_ cell: Int) -> Bool {
+        autoCandidateMode && entries[cell] == 0 && !displayedNotes(cell).contains(puzzle.solution[cell])
+    }
+
+    /// Something Check should flag: a wrong digit, or (auto mode) a removed answer.
+    func isFlaggable(_ cell: Int) -> Bool { isWrong(cell) || ruledOutAnswer(cell) }
 }

@@ -104,6 +104,7 @@ public struct GameSession: Codable, Equatable, Sendable {
                 var r = removals
                 if r[cell].contains(digit) { r[cell].remove(digit) } else { r[cell].insert(digit) }
                 removedMarks = r
+                if !isFlaggable(cell) { flaggedWrong.remove(cell) }
             } else if notes[cell].contains(digit) {
                 notes[cell].remove(digit)
             } else {
@@ -137,7 +138,7 @@ public struct GameSession: Codable, Equatable, Sendable {
         entries = s.entries
         notes = s.notes
         if let r = s.removed { removedMarks = r }
-        flaggedWrong = flaggedWrong.filter(isWrong)
+        flaggedWrong = flaggedWrong.filter(isFlaggable)
     }
 
     public mutating func setPaused(_ paused: Bool) { isPaused = paused }

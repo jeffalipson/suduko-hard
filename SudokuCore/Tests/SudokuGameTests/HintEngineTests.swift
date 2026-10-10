@@ -17,12 +17,12 @@ import SudokuGame
         #expect(HintEngine.diagnose(g) == .mistake)
     }
 
-    @Test func notesMissingTheAnswerAreAMistake() {
+    @Test func ownNotesMissingTheAnswerAreSetAsideNotAMistake() {
         var g = GameSession(puzzle: classicPuzzle())
         g.selected = 2
         g.inputMode = .candidate
-        g.input(1, settings: GameSettings())   // answer is 4
-        #expect(HintEngine.diagnose(g) == .mistake)
+        g.input(1, settings: GameSettings())   // answer is 4: partial marks are allowed
+        #expect(HintEngine.diagnose(g) != .mistake)
     }
 
     @Test func staleNotesAreIgnored() {

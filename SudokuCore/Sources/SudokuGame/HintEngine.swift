@@ -17,10 +17,9 @@ public enum HintEngine {
     public static func diagnose(_ session: GameSession) -> HintDiagnosis {
         if session.isComplete { return .solved }
         for c in 0..<81 where session.entries[c] != 0 && session.isWrong(c) { return .mistake }
-        let shown = session.displayedNotes()
-        for c in 0..<81 where session.entries[c] == 0 && !shown[c].isEmpty {
-            if !shown[c].contains(session.puzzle.solution[c]) { return .mistake }
-        }
+        // Only what Check can find counts as a mistake: wrong digits, and answers removed in auto mode.
+        for c in 0..<81 where session.ruledOutAnswer(c) { return .mistake }
+        let shown = usableNotes(session)
         let board = playerBoard(session)
         let solver: LogicalSolver = session.puzzle.mode == .classic ? .classic : .killer
         guard let step = solver.nextStep(on: board) else { return .beyond }
@@ -39,10 +38,19 @@ public enum HintEngine {
     /// The player's position: their digits, and their notes (minus stale digits) where they made any.
     public static func playerBoard(_ session: GameSession) -> Board {
         var board = Board(values: session.entries, cages: session.puzzle.cages)
-        let shown = session.displayedNotes()
+        let shown = usableNotes(session)
         for c in 0..<81 where session.entries[c] == 0 && !shown[c].isEmpty {
             board.candidates[c] = shown[c].intersection(board.candidates[c])
         }
         return board
+    }
+
+    /// The candidates the hint may build on. The player's own pencil marks are free-form (partial
+    /// or "Snyder" marks are common), so marks that leave out a cell's answer are set aside rather
+    /// than treated as a mistake; that cell then counts as un-pencilled.
+    static func usableNotes(_ session: GameSession) -> [CandidateSet] {
+        let shown = session.displayedNotes()
+        guard !session.autoCandidateMode else { return shown }
+        return (0..<81).map { c in shown[c].contains(session.puzzle.solution[c]) ? shown[c] : .empty }
     }
 }

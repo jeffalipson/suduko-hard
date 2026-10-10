@@ -189,7 +189,8 @@ The hint engine compares the player's board with the true solution and with the 
 
 | Player board state | Response |
 |---|---|
-| Any placed digit is wrong, or a correct candidate has been erased | "There's a mistake on your board." (Location not shown; use Check.) |
+| Any placed digit is wrong, or (auto candidates on) a cell's answer was removed by hand | "There's a mistake on your board." (Location not shown; Check finds exactly these.) |
+| The player's own pencil marks leave out a cell's answer | Not a mistake — partial or "Snyder" marks are common. Those marks are set aside and the cell counts as un-pencilled. |
 | Candidates missing in cells the next step needs | "Your candidates in <row/col/box> are incomplete — fill those in first." |
 | A simpler technique is available on the player's own marks than the engine's next step | Hint for that simpler step instead. |
 | Marks complete and correct | Normal hint flow for the next step. |

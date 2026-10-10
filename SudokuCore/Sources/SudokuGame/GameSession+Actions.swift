@@ -28,13 +28,13 @@ extension GameSession {
     public mutating func checkCell() {
         guard let cell = selected else { return }
         log.checks += 1
-        if isWrong(cell) { flag([cell]) }
+        if isFlaggable(cell) { flag([cell]) }
     }
 
     /// Flags every wrong cell.
     public mutating func checkPuzzle() {
         log.checks += 1
-        flag((0..<81).filter(isWrong))
+        flag((0..<81).filter(isFlaggable))
     }
 
     /// Fills the selected cell with its solution digit (clearing it from peer notes when auto-remove is on).
