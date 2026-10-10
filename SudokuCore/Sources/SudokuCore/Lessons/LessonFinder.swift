@@ -9,7 +9,7 @@ public enum LessonFinder {
         search(id, seeds: seeds, requireNext: true) ?? search(id, seeds: seeds, requireNext: false)
     }
 
-    static func search(_ id: TechniqueID, seeds: Range<UInt64>, requireNext: Bool) -> LessonExample? {
+    public static func search(_ id: TechniqueID, seeds: Range<UInt64>, requireNext: Bool) -> LessonExample? {
         guard let technique = technique(for: id) else { return nil }
         let killer = id.isKillerOnly
         let solver = killer ? LogicalSolver.killer : LogicalSolver.classic
@@ -37,6 +37,21 @@ public enum LessonFinder {
                     return LessonExample(technique: id, board: board, step: step)
                 }
                 guard let next else { break }
+                board.apply(next)
+            }
+        }
+        return nil
+    }
+
+    /// A position from one of `puzzles`' solve paths where `id` is the solver's next step.
+    /// Real graded puzzles reach rare techniques that random puzzles almost never do.
+    public static func find(_ id: TechniqueID, in puzzles: [Puzzle]) -> LessonExample? {
+        for puzzle in puzzles where puzzle.techniquesRequired.contains(id) {
+            let solver = puzzle.mode == .killer ? LogicalSolver.killer : LogicalSolver.classic
+            var board = Board(values: puzzle.givens, cages: puzzle.cages)
+            for _ in 0..<400 {
+                guard let next = solver.nextStep(on: board) else { break }
+                if next.technique == id { return LessonExample(technique: id, board: board, step: next) }
                 board.apply(next)
             }
         }

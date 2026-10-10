@@ -4,7 +4,7 @@ public enum LessonText {
     public static func explanation(for id: TechniqueID) -> String {
         switch id {
         case .fullHouse: return "A row, column or box with only one empty cell: that cell takes the one digit the house is still missing."
-        case .nakedSingle: return "A cell whose candidates are down to a single digit. Every other digit is already used by a peer in its row, column or box, so this digit goes here."
+        case .nakedSingle: return "A cell whose candidates are down to a single digit: every other digit has been ruled out (by its row, column and box, or by earlier deductions), so this digit goes here."
         case .hiddenSingle: return "Within a house, a digit that fits in only one cell. Even if that cell has other candidates, the digit must go there because the house needs it somewhere."
         case .pointing: return "Inside a box, all candidates for a digit lie in one row (or column). The box's copy of the digit will be on that line, so remove it from the rest of the line outside the box."
         case .boxLineReduction: return "Inside a row or column, all candidates for a digit lie in one box. The line's copy will be in that box, so remove the digit from the rest of the box."
@@ -20,7 +20,7 @@ public enum LessonText {
         case .twoStringKite: return "A row strong link and a column strong link on a digit, with one end of each in the same box. One of the two far ends must be the digit; remove it from cells seeing both."
         case .xyWing: return "A pivot cell {A,B} sees two pincers {A,C} and {B,C}. Whatever the pivot is, one pincer becomes C, so any cell seeing both pincers can't be C."
         case .swordfish: return "The three-line version of the X-Wing: for one digit, three rows have all their candidates in the same three columns. Remove the digit from the rest of those columns."
-        case .emptyRectangle: return "In a box, a digit's candidates sit on one row and one column (a cross). Combined with a strong link that ends on that row or column, the digit is forced away from one cell where the link and the cross meet."
+        case .emptyRectangle: return "In a box, a digit's candidates sit on one row and one column (a cross). Take a strong link outside the box with one end on the cross's row (or column). If that end is false the far end is true; if it's true the cross is pushed onto its other line. Either way, the cell where the cross's other line meets the line through the far end of the link loses the digit."
         case .xyzWing: return "A pivot {A,B,C} sees pincers {A,C} and {B,C}. C must be in one of the three cells, so cells seeing all three lose C."
         case .wWing: return "Two identical bivalue cells {A,B} that don't see each other, joined by a strong link on A whose ends each see one of them. One of the two cells must be B, so cells seeing both lose B."
         case .uniqueRectangle2: return "A rectangle whose two floor cells are {A,B} and whose two roof cells are {A,B,C}. To avoid two solutions one roof must be C, so cells seeing both roof cells lose C."
@@ -31,7 +31,7 @@ public enum LessonText {
         case .finnedSwordfish: return "A Swordfish with fins confined to one box. Cells in the cover lines inside the fin box lose the digit."
         case .jellyfish: return "The four-line fish: one digit's candidates in four rows fit into four columns. Remove the digit from the rest of those columns."
         case .xCycle: return "A chain on a single digit that alternates strong links (only two places in a house) and weak links. If the first candidate is false the last is true, so cells seeing both ends lose the digit."
-        case .xyChain: return "A chain through bivalue cells: each cell's other digit links to the next cell. The two ends can't both be false, so a digit they share leaves every cell that sees both ends."
+        case .xyChain: return "A chain through bivalue cells: each cell's other digit links to the next cell. It starts and ends on the same digit Z, and one of the two ends must be Z, so every cell that sees both ends loses Z."
         case .sueDeCoq: return "Two or three cells where a box meets a line hold two more digits than cells. A bivalue cell in the line and one in the box use up the extras, so each set of digits leaves the rest of its line or box."
         case .alsXZ: return "Two almost-locked sets (N cells, N+1 digits) share a digit X that can only be in one of them. Another shared digit Z must then be in one set, so cells seeing every Z in both lose Z."
         case .aic: return "An alternating inference chain mixes cell links and house links. Starting with a strong link and ending with one, at least one end is true, so anything that conflicts with both ends is false."

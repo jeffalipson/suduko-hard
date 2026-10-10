@@ -13,3 +13,13 @@ import SudokuCore
         #expect(back == lesson)
     }
 }
+
+@Suite struct LessonFromPuzzlesTests {
+    @Test func findsTechniqueAsNextStepInRealPuzzles() throws {
+        var rng = SplitMix64(seed: 3)
+        let puzzle = try #require(ClassicGenerator().generate(tier: .hard, using: &rng))
+        let id = try #require(puzzle.techniquesRequired.last)
+        let lesson = try #require(LessonFinder.find(id, in: [puzzle]))
+        #expect(LogicalSolver.classic.nextStep(on: lesson.board)?.technique == id)
+    }
+}

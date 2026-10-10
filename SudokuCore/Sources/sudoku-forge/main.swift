@@ -55,10 +55,22 @@ func parse(_ args: [String]) -> Options {
     return o
 }
 
-if CommandLine.arguments.count == 3, CommandLine.arguments[1] == "--lessons" {
+if (3...4).contains(CommandLine.arguments.count), CommandLine.arguments[1] == "--lessons" {
+    // Optional library directory: real graded puzzles supply examples of rare techniques.
+    var library: [Puzzle] = []
+    if CommandLine.arguments.count == 4 {
+        let dir = URL(fileURLWithPath: CommandLine.arguments[3])
+        for file in (try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)) ?? []
+        where file.pathExtension == "json" {
+            if let data = try? Data(contentsOf: file), let list = try? JSONDecoder().decode([Puzzle].self, from: data) {
+                library += list
+            }
+        }
+    }
     var lessons: [LessonExample] = []
     for id in TechniqueID.allCases {
-        if let lesson = LessonFinder.find(id, seeds: 1..<400) {
+        let strict = LessonFinder.search(id, seeds: 1..<400, requireNext: true) ?? LessonFinder.find(id, in: library)
+        if let lesson = strict ?? LessonFinder.find(id, seeds: 1..<400) {
             lessons.append(lesson)
             log("lesson \(id.rawValue): found")
         } else {
