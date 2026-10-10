@@ -2,7 +2,7 @@ import Testing
 import SudokuCore
 
 @Suite struct KillerGeneratorTests {
-    @Test(arguments: [Tier.easy, .medium, .hard, .expert])
+    @Test(arguments: [Tier.easy, .medium, .hard, .expert, .fiendish])
     func generatesRequestedTier(tier: Tier) throws {
         var rng = SplitMix64(seed: 5)
         let p = try #require(KillerGenerator().generate(tier: tier, using: &rng))
@@ -24,5 +24,22 @@ import SudokuCore
         #expect(KillerRules.forTier(.easy).givens == 6...12)
         #expect(KillerRules.forTier(.expert).givens == 0...0)
         #expect(KillerRules.forTier(.nightmare).cageSizes == 3...8)
+    }
+}
+
+@Suite struct KillerMergeTests {
+    @Test func expiredDeadlineStopsAZeroGivenAttempt() {
+        var rng = SplitMix64(seed: 1)
+        let start = ContinuousClock.now
+        #expect(KillerGenerator().generate(tier: .nightmare, using: &rng, deadline: start + .milliseconds(1)) == nil)
+        #expect(ContinuousClock.now - start < .seconds(5))
+    }
+
+    @Test func zeroGivenPuzzlesHaveNoGivens() throws {
+        var rng = SplitMix64(seed: 2)
+        let p = try #require(KillerGenerator().generate(tier: .expert, using: &rng))
+        #expect(p.givens.allSatisfy { $0 == 0 })
+        #expect(KillerRules.forTier(.expert).admits(p.cages))
+        #expect(!p.cages.contains { $0.cells.count == 1 })
     }
 }

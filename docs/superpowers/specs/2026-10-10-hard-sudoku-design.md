@@ -125,6 +125,8 @@ A Killer puzzle's tier is its hardest technique's tier; its givens and cage size
 3. Choose givens per the tier's range.
 4. Confirm uniqueness with the cage-aware BruteForceSolver; grade; accept if tier == target, otherwise retry.
 
+Zero-given tiers (Expert and up) use a different route, because random large-cage layouts almost never have a unique solution: start from the smallest cages the tier allows, then merge neighbouring cages while the puzzle stays logically solvable within the tier, until it reaches the target tier. A complete logical solve with the Killer catalog (which has no uniqueness techniques) proves the solution is unique, so no brute-force check is needed. Measured in release: Expert ~0.3 s, Fiendish ~4 s, Diabolical ~4 min, Nightmare ~70 s per puzzle.
+
 ### 5.3 Library (sudoku-forge CLI)
 - `sudoku-forge --mode <classic|killer> --tier <tier> --count <n> --out <file>`
 - Target 300 puzzles per mode × tier (4,200 total), stored as compact JSON in the app bundle.

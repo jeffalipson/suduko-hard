@@ -63,4 +63,31 @@ public enum KillerCages {
             Cage(cells: cells.sorted(), sum: cells.map { solution[$0] }.reduce(0, +))
         }
     }
+
+    /// Index pairs of orthogonally adjacent cages that can merge: combined size within `maxSize`
+    /// and no digit (from `solution`) repeated.
+    static func mergeablePairs(_ cages: [Cage], solution: [Int], maxSize: Int) -> [(Int, Int)] {
+        var owner = [Int](repeating: -1, count: 81)
+        for (i, cage) in cages.enumerated() { for c in cage.cells { owner[c] = i } }
+        var pairs = Set<[Int]>()
+        for (i, cage) in cages.enumerated() {
+            for c in cage.cells {
+                for n in neighbours(c) where owner[n] > i {
+                    let j = owner[n]
+                    guard cage.cells.count + cages[j].cells.count <= maxSize,
+                          Set(cage.cells.map { solution[$0] }).isDisjoint(with: cages[j].cells.map { solution[$0] }) else { continue }
+                    pairs.insert([i, j])
+                }
+            }
+        }
+        return pairs.sorted { $0.lexicographicallyPrecedes($1) }.map { ($0[0], $0[1]) }
+    }
+
+    /// `cages` with cage `j` folded into cage `i`.
+    static func merging(_ cages: [Cage], _ i: Int, _ j: Int) -> [Cage] {
+        var out = cages
+        out[i] = Cage(cells: (cages[i].cells + cages[j].cells).sorted(), sum: cages[i].sum + cages[j].sum)
+        out.remove(at: j)
+        return out
+    }
 }

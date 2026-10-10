@@ -39,14 +39,17 @@ public struct KillerGenerator: Sendable {
     ) -> Puzzle? {
         guard tier <= solver.maxTier else { return nil }
         while deadline.map({ ContinuousClock.now < $0 }) ?? true {
-            if let puzzle = attempt(tier: tier, using: &rng) { return puzzle }
+            if let puzzle = attempt(tier: tier, deadline: deadline, using: &rng) { return puzzle }
         }
         return nil
     }
 
-    private func attempt<R: RandomNumberGenerator>(tier: Tier, using rng: inout R) -> Puzzle? {
+    private func attempt<R: RandomNumberGenerator>(tier: Tier, deadline: ContinuousClock.Instant?, using rng: inout R) -> Puzzle? {
         let rules = KillerRules.forTier(tier)
         let capped = LogicalSolver(techniques: solver.techniques.filter { $0.id.tier <= tier })
+        if rules.givens.upperBound == 0 {
+            return attemptByMerging(tier: tier, rules: rules, capped: capped, deadline: deadline, using: &rng)
+        }
         let solution = BruteForceSolver.randomSolution(using: &rng)
         let cages = KillerCages.partition(solution: solution, sizes: rules.cageSizes, using: &rng)
         guard rules.admits(cages) else { return nil }
@@ -72,6 +75,47 @@ public struct KillerGenerator: Sendable {
             id: String(rng.next(), radix: 16),
             mode: .killer,
             givens: givens,
+            cages: cages,
+            solution: solution,
+            grade: report.grade,
+            techniquesRequired: report.techniquesRequired
+        )
+    }
+
+    /// Zero-given tiers: random large-cage layouts almost never have a unique solution, so start from
+    /// minimum-size cages (which pin the solution down) and merge neighbouring cages while the puzzle
+    /// stays logically solvable within the tier — the cage counterpart of removing givens.
+    private func attemptByMerging<R: RandomNumberGenerator>(
+        tier: Tier, rules: KillerRules, capped: LogicalSolver, deadline: ContinuousClock.Instant?, using rng: inout R
+    ) -> Puzzle? {
+        let solution = BruteForceSolver.randomSolution(using: &rng)
+        let empty = [Int](repeating: 0, count: 81)
+        // Smallest cages (plus one size up, so 81 cells tile without one-cell leftovers).
+        let smallest = rules.cageSizes.lowerBound
+        var cages = KillerCages.partition(solution: solution, sizes: smallest...min(smallest + 1, rules.cageSizes.upperBound), using: &rng)
+        guard rules.admits(cages), !cages.contains(where: { $0.cells.count == 1 }),
+              var report = Grader.grade(empty, cages: cages, solution: solution, solver: capped) else { return nil }
+        var merged = true
+        while merged && report.grade.tier < tier {
+            merged = false
+            let pairs = KillerCages.mergeablePairs(cages, solution: solution, maxSize: rules.cageSizes.upperBound)
+            for (i, j) in pairs.shuffled(using: &rng) {
+                if let deadline, ContinuousClock.now >= deadline { return nil }
+                let candidate = KillerCages.merging(cages, i, j)
+                // A complete logical solve (no uniqueness techniques in the Killer catalog) proves uniqueness.
+                if let r = Grader.grade(empty, cages: candidate, solution: solution, solver: capped) {
+                    cages = candidate
+                    report = r
+                    merged = true
+                    break
+                }
+            }
+        }
+        guard report.grade.tier == tier else { return nil }
+        return Puzzle(
+            id: String(rng.next(), radix: 16),
+            mode: .killer,
+            givens: empty,
             cages: cages,
             solution: solution,
             grade: report.grade,
