@@ -24,9 +24,12 @@ public enum HintEngine {
         let solver: LogicalSolver = session.puzzle.mode == .classic ? .classic : .killer
         guard let step = solver.nextStep(on: board) else { return .beyond }
         if !singles.contains(step.technique) {
-            let touched = step.patternCells + step.patternCandidates.map(\.cell) + step.eliminations.map(\.cell)
-            if let bare = touched.first(where: { session.entries[$0] == 0 && session.notes[$0].isEmpty }) {
-                return .incomplete(step.regions.first ?? .row(Geometry.row(bare)))
+            // The pattern must be visible in the player's notes; eliminations can land on bare cells
+            // (Show me fills them in), so they don't need notes.
+            let pattern = step.patternCells + step.patternCandidates.map(\.cell)
+            if let bare = pattern.first(where: { session.entries[$0] == 0 && session.notes[$0].isEmpty }) {
+                // Name a region that actually contains the bare cell, so filling it in makes progress.
+                return .incomplete(step.regions.first { $0.cells.contains(bare) } ?? .box(Geometry.box(bare)))
             }
         }
         return .step(step)

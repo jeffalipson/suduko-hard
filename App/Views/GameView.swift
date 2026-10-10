@@ -13,6 +13,10 @@ struct GameView: View {
     @State private var diagnosis: HintDiagnosis?
     @State private var hintLevel = 0
     @State private var showLesson = false
+    /// Show me waits until the lesson sheet has closed, so a solving step can present completion.
+    @State private var pendingShowMe: Step?
+    /// Hint levels already logged for the current diagnosis (each counted once).
+    @State private var loggedLevels: Set<String> = []
 
     private var hintStep: Step? {
         if case .step(let step) = diagnosis { return step }
@@ -70,12 +74,10 @@ struct GameView: View {
                 HintBar(diagnosis: diagnosis, level: hintLevel,
                         onSpotlight: {
                             hintLevel = 2
-                            s.wrappedValue.useHint("spotlight")
-                            model.update(s.wrappedValue, for: key)
+                            logHint("spotlight", s)
                         },
                         onLesson: {
-                            s.wrappedValue.useHint("lesson")
-                            model.update(s.wrappedValue, for: key)
+                            logHint("lesson", s)
                             showLesson = true
                         },
                         onClose: { self.diagnosis = nil; hintLevel = 0 })
@@ -83,13 +85,22 @@ struct GameView: View {
             }
             ControlsView(session: s, settings: model.settings, onChange: { changed(s.wrappedValue) }, showCageHelper: $showCageHelper,
                          onHint: {
+                             // Each tap escalates: nudge → spotlight → lesson.
+                             if hintStep != nil {
+                                 if hintLevel < 2 {
+                                     hintLevel = 2
+                                     logHint("spotlight", s)
+                                 } else {
+                                     logHint("lesson", s)
+                                     showLesson = true
+                                 }
+                                 return
+                             }
                              let d = HintEngine.diagnose(s.wrappedValue)
                              diagnosis = d
                              hintLevel = 1
-                             if case .step = d {
-                                 s.wrappedValue.useHint("nudge")
-                                 model.update(s.wrappedValue, for: key)
-                             }
+                             loggedLevels = []
+                             if case .step = d { logHint("nudge", s) }
                          })
                 .padding(.horizontal, 12)
                 .disabled(s.wrappedValue.isPaused)
@@ -116,13 +127,17 @@ struct GameView: View {
             }
         }
         .sheet(isPresented: $showCageHelper) { CageHelperView(session: s.wrappedValue) }
-        .sheet(isPresented: $showLesson) {
+        .sheet(isPresented: $showLesson, onDismiss: {
+            guard let step = pendingShowMe else { return }
+            pendingShowMe = nil
+            s.wrappedValue.showMe(step)
+            diagnosis = nil
+            hintLevel = 0
+            changed(s.wrappedValue)
+        }) {
             if let step = hintStep {
                 LessonView(technique: step.technique, example: model.lessons[step.technique]) {
-                    s.wrappedValue.showMe(step)
-                    diagnosis = nil
-                    hintLevel = 0
-                    changed(s.wrappedValue)
+                    pendingShowMe = step
                 }
             }
         }
@@ -133,6 +148,12 @@ struct GameView: View {
             }
             .interactiveDismissDisabled()
         }
+    }
+
+    private func logHint(_ level: String, _ s: Binding<GameSession>) {
+        guard loggedLevels.insert(level).inserted else { return }
+        s.wrappedValue.useHint(level)
+        model.update(s.wrappedValue, for: key)
     }
 
     private func changed(_ s: GameSession) {
