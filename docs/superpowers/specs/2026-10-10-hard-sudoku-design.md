@@ -136,7 +136,7 @@ Applied to every puzzle before it is shown, with a fresh random seed:
 - Band and stack permutation (6²)
 - Transpose (×2)
 
-That gives ~1.2 × 10¹² variants per puzzle. Cages transform with their cells. Transforms preserve uniqueness and grade exactly (verified by tests).
+That gives ~1.2 × 10¹² variants per classic puzzle. Cages transform with their cells. Killer puzzles skip digit relabelling (it would change cage sums), leaving ~3.4 × 10⁶ geometric variants per puzzle. Transforms preserve uniqueness and grade exactly (verified by tests).
 
 ### 5.5 Queue manager
 - 14 queues (2 modes × 7 tiers), each kept at **3** ready puzzles, persisted on disk.
