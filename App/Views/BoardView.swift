@@ -28,6 +28,24 @@ struct BoardView: View {
                     let c = min(8, max(0, Int(tap.location.x / cell)))
                     onTap(r * 9 + c)
                 })
+                .accessibilityElement(children: .contain)
+                .accessibilityChildren {
+                    // VoiceOver: one element per cell, laid out over the canvas.
+                    Grid(horizontalSpacing: 0, verticalSpacing: 0) {
+                        ForEach(0..<9, id: \.self) { r in
+                            GridRow {
+                                ForEach(0..<9, id: \.self) { c in
+                                    let cell = r * 9 + c
+                                    Rectangle()
+                                        .frame(width: size / 9, height: size / 9)
+                                        .accessibilityLabel(session.spokenDescription(of: cell))
+                                        .accessibilityAddTraits(session.selected == cell ? [.isButton, .isSelected] : .isButton)
+                                        .accessibilityAction { onTap(cell) }
+                                }
+                            }
+                        }
+                    }
+                }
                 .accessibilityIdentifier("board")
         }
         .aspectRatio(1, contentMode: .fit)

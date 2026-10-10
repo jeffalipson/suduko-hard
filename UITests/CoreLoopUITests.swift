@@ -50,3 +50,15 @@ final class StatsUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Stats"].waitForExistence(timeout: 5))
     }
 }
+
+final class AccessibilityUITests: XCTestCase {
+    func testBoardCellsAreReadable() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-open", "classic-easy", "-new"]
+        app.launch()
+        let cell = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH 'Row 5, column 5.'")).firstMatch
+        XCTAssertTrue(cell.waitForExistence(timeout: 15))
+        cell.tap()
+        XCTAssertTrue(app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH 'Row 5, column 5.'")).firstMatch.isSelected)
+    }
+}
