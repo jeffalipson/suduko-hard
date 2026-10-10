@@ -27,7 +27,7 @@ import SudokuGame
         g.selected = 2
         g.erase()
         g.undo()
-        g.revealCell()
+        g.revealCell(settings: GameSettings())
         #expect(g.entries == done.entries && g.notes == done.notes && g.log == done.log)
     }
 

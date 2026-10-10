@@ -15,7 +15,7 @@ import SudokuGame
         g.fillAllCandidates()
         g.selected = 5
         g.inputMode = .normal
-        g.revealCell()
+        g.revealCell(settings: GameSettings())
         let end = g
         for _ in 0..<4 { g.undo() }
         #expect(g.entries == wikiGivens)
@@ -57,10 +57,10 @@ import SudokuGame
     @Test func revealFillsSolutionButNotGivens() {
         var g = GameSession(puzzle: classicPuzzle())
         g.selected = 0
-        g.revealCell()
+        g.revealCell(settings: GameSettings())
         #expect(g.log.reveals == 0)
         g.selected = 2
-        g.revealCell()
+        g.revealCell(settings: GameSettings())
         #expect(g.entries[2] == wikiAnswer[2])
         #expect(g.log.reveals == 1)
     }

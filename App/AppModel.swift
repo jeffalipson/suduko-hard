@@ -113,7 +113,9 @@ final class AppModel {
             progressed = false
             for key in QueueKey.all where queues.deficit(key) > 0 && !cancelRefill {
                 let before = queues.count(key)
-                if let generated = await Task.detached(priority: .background, operation: { AppModel.generate(key, seconds: 60) }).value {
+                // Tiers too slow to generate on a phone come only from the bundled library.
+                let budget = AppModel.onDeviceBudget(key)
+                if let budget, let generated = await Task.detached(priority: .background, operation: { AppModel.generate(key, seconds: budget) }).value {
                     queues.push(generated, for: key, using: &rng)
                 } else {
                     queues.refillFromLibrary(key, library: library, using: &rng)
@@ -124,6 +126,12 @@ final class AppModel {
                 }
             }
         }
+    }
+
+    /// Seconds to spend generating one puzzle on the device, or nil for tiers that take minutes
+    /// even on a Mac (Killer Diabolical/Nightmare) and so come only from the library.
+    nonisolated static func onDeviceBudget(_ key: QueueKey) -> Double? {
+        key.mode == .killer && key.tier >= .diabolical ? nil : 60
     }
 
     nonisolated static func generate(_ key: QueueKey, seconds: Double) -> Puzzle? {
@@ -137,6 +145,7 @@ final class AppModel {
 
     /// For a tier with nothing queued and nothing in the library: generate one now and start it.
     func generateAndStart(_ key: QueueKey) async -> Bool {
+        guard AppModel.onDeviceBudget(key) != nil else { return false }
         guard let puzzle = await Task.detached(priority: .userInitiated, operation: { AppModel.generate(key, seconds: 900) }).value else {
             return false
         }

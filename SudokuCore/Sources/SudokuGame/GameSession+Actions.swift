@@ -38,7 +38,7 @@ extension GameSession {
     }
 
     /// Fills the selected cell with its solution digit (clearing it from peer notes when auto-remove is on).
-    public mutating func revealCell(settings: GameSettings = GameSettings()) {
+    public mutating func revealCell(settings: GameSettings) {
         guard let cell = selected, !isGiven(cell), !isComplete, entries[cell] != puzzle.solution[cell] else { return }
         record()
         var e = entries

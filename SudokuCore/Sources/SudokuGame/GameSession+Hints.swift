@@ -21,6 +21,8 @@ extension GameSession {
             n[cd.cell] = .empty
         }
         restore(Snapshot(entries: e, notes: n))
+        // Always tidy peers (unlike Reveal, which follows the auto-remove setting): a hint step should
+        // leave the board consistent for the next hint.
         for cd in step.placements { removeNote(cd.digit, around: cd.cell) }
         log.hints["showMe", default: 0] += 1
         log.reveals += 1

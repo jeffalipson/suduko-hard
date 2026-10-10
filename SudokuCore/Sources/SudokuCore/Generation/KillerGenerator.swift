@@ -100,6 +100,7 @@ public struct KillerGenerator: Sendable {
             merged = false
             let pairs = KillerCages.mergeablePairs(cages, solution: solution, maxSize: rules.cageSizes.upperBound)
             for (i, j) in pairs.shuffled(using: &rng) {
+                // Checked between grades: one grade can overrun the deadline (seconds at Nightmare).
                 if let deadline, ContinuousClock.now >= deadline { return nil }
                 let candidate = KillerCages.merging(cages, i, j)
                 // A complete logical solve (no uniqueness techniques in the Killer catalog) proves uniqueness.
