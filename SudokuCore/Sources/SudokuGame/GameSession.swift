@@ -1,3 +1,4 @@
+import Foundation
 import SudokuCore
 
 public enum InputMode: String, Codable, Sendable {
@@ -54,6 +55,8 @@ public struct GameSession: Codable, Equatable, Sendable {
     public internal(set) var log = AssistLog()
     /// Cells a Check flagged as wrong; cleared when the cell changes.
     public private(set) var flaggedWrong: Set<Int> = []
+    /// When the game was created (nil for games saved before this was recorded).
+    public private(set) var startedAt: Date?
     var undoStack: [Snapshot] = []
     var redoStack: [Snapshot] = []
 
@@ -61,6 +64,7 @@ public struct GameSession: Codable, Equatable, Sendable {
         self.puzzle = puzzle
         self.entries = puzzle.givens
         self.notes = Array(repeating: .empty, count: 81)
+        self.startedAt = Date()
     }
 
     public func isGiven(_ cell: Int) -> Bool { puzzle.givens[cell] != 0 }

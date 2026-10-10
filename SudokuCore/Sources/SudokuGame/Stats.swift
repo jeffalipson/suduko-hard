@@ -17,12 +17,15 @@ public struct GameRecordData: Codable, Equatable, Sendable {
     public var assists: Int
     public var clean: Bool
     public var techniques: [TechniqueID]
+    /// Wall-clock start, when known.
+    public var startedAt: Date?
 
     public init(mode: Mode, tier: Tier, puzzleID: String, endDate: Date, elapsed: Double, won: Bool, mistakes: Int?,
-                hints: [String: Int], checks: Int, reveals: Int, assists: Int, clean: Bool, techniques: [TechniqueID]) {
+                hints: [String: Int], checks: Int, reveals: Int, assists: Int, clean: Bool, techniques: [TechniqueID],
+                startedAt: Date? = nil) {
         self.mode = mode; self.tier = tier; self.puzzleID = puzzleID; self.endDate = endDate; self.elapsed = elapsed
         self.won = won; self.mistakes = mistakes; self.hints = hints; self.checks = checks; self.reveals = reveals
-        self.assists = assists; self.clean = clean; self.techniques = techniques
+        self.assists = assists; self.clean = clean; self.techniques = techniques; self.startedAt = startedAt
     }
 
     public init(session: GameSession, won: Bool, endDate: Date) {
@@ -30,7 +33,7 @@ public struct GameRecordData: Codable, Equatable, Sendable {
         self.init(mode: session.puzzle.mode, tier: session.puzzle.grade.tier, puzzleID: session.puzzle.id, endDate: endDate,
                   elapsed: session.elapsed, won: won, mistakes: Self.recordedMistakes(log),
                   hints: log.hints, checks: log.checks, reveals: log.reveals, assists: log.autoCandidates + log.cageHelper,
-                  clean: won && log.isClean, techniques: session.puzzle.techniquesRequired)
+                  clean: won && log.isClean, techniques: session.puzzle.techniquesRequired, startedAt: session.startedAt)
     }
 
     /// Mistakes only count if highlighting was on; games saved before that was tracked
@@ -39,8 +42,8 @@ public struct GameRecordData: Codable, Equatable, Sendable {
         log.highlightingUsed || log.mistakes > 0 ? log.mistakes : nil
     }
 
-    /// Wall-clock start, derived from play time.
-    public var startDate: Date { endDate.addingTimeInterval(-elapsed) }
+    /// Wall-clock start: recorded when known, otherwise derived from play time.
+    public var startDate: Date { startedAt ?? endDate.addingTimeInterval(-elapsed) }
 }
 
 public struct TierStats: Equatable, Sendable {

@@ -24,8 +24,9 @@ public enum Grader {
     }
 
     /// Grades a puzzle whose uniqueness the caller has already proved.
-    public static func grade(_ givens: [Int], cages: [Cage] = [], solution: [Int], solver: LogicalSolver = .classic) -> GradeReport? {
-        let result = solver.solve(Board(values: givens, cages: cages))
+    public static func grade(_ givens: [Int], cages: [Cage] = [], solution: [Int], solver: LogicalSolver = .classic,
+                             deadline: ContinuousClock.Instant? = nil) -> GradeReport? {
+        let result = solver.solve(Board(values: givens, cages: cages), deadline: deadline)
         guard result.solved, result.board.values == solution else { return nil }
         let used = Set(result.steps.map(\.technique))
         let techniques = TechniqueID.allCases.filter(used.contains)

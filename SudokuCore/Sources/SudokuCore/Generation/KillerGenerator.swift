@@ -64,7 +64,7 @@ public struct KillerGenerator: Sendable {
             givens[c] = 0
             // The Killer catalog has no uniqueness techniques, so a complete logical solve proves the
             // solution is unique; brute-force counting near zero givens is far too slow for Killer.
-            if let report = Grader.grade(givens, cages: cages, solution: solution, solver: capped) {
+            if let report = Grader.grade(givens, cages: cages, solution: solution, solver: capped, deadline: deadline) {
                 accepted = report
             } else {
                 givens[c] = solution[c]
@@ -95,7 +95,7 @@ public struct KillerGenerator: Sendable {
         let smallest = rules.cageSizes.lowerBound
         var cages = KillerCages.partition(solution: solution, sizes: smallest...min(smallest + 1, rules.cageSizes.upperBound), using: &rng)
         guard rules.admits(cages), !cages.contains(where: { $0.cells.count == 1 }),
-              var report = Grader.grade(empty, cages: cages, solution: solution, solver: capped) else { return nil }
+              var report = Grader.grade(empty, cages: cages, solution: solution, solver: capped, deadline: deadline) else { return nil }
         var merged = true
         while merged && report.grade.tier < tier {
             merged = false
@@ -105,7 +105,7 @@ public struct KillerGenerator: Sendable {
                 if let deadline, ContinuousClock.now >= deadline { return nil }
                 let candidate = KillerCages.merging(cages, i, j)
                 // A complete logical solve (no uniqueness techniques in the Killer catalog) proves uniqueness.
-                if let r = Grader.grade(empty, cages: candidate, solution: solution, solver: capped) {
+                if let r = Grader.grade(empty, cages: candidate, solution: solution, solver: capped, deadline: deadline) {
                     cages = candidate
                     report = r
                     merged = true
@@ -126,7 +126,7 @@ public struct KillerGenerator: Sendable {
                 tries += 1
                 if tries > 60 { break growth }
                 let candidate = KillerCages.merging(cages, i, j)
-                if let r = Grader.grade(empty, cages: candidate, solution: solution, solver: capped), r.grade.tier == tier {
+                if let r = Grader.grade(empty, cages: candidate, solution: solution, solver: capped, deadline: deadline), r.grade.tier == tier {
                     cages = candidate
                     report = r
                     continue growth

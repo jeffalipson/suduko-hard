@@ -43,8 +43,11 @@ public struct PuzzleQueues: Codable, Equatable, Sendable {
             var indices = order[key.name] ?? []
             var at = cursor[key.name] ?? 0
             if indices.count != pool.count || at >= indices.count {
+                let last = at > 0 && at <= indices.count ? indices[at - 1] : nil
                 indices = Array(pool.indices).shuffled(using: &rng)
                 at = 0
+                // Never deal the same puzzle twice in a row across a reshuffle.
+                if indices.count > 1, indices[0] == last { indices.swapAt(0, 1) }
             }
             push(pool[indices[at]], for: key, using: &rng)
             order[key.name] = indices

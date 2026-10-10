@@ -14,12 +14,12 @@ public struct ClassicGenerator: Sendable {
     ) -> Puzzle? {
         guard tier <= solver.maxTier else { return nil }
         while deadline.map({ ContinuousClock.now < $0 }) ?? true {
-            if let puzzle = attempt(tier: tier, using: &rng) { return puzzle }
+            if let puzzle = attempt(tier: tier, deadline: deadline, using: &rng) { return puzzle }
         }
         return nil
     }
 
-    private func attempt<R: RandomNumberGenerator>(tier: Tier, using rng: inout R) -> Puzzle? {
+    private func attempt<R: RandomNumberGenerator>(tier: Tier, deadline: ContinuousClock.Instant?, using rng: inout R) -> Puzzle? {
         // Grade only with techniques up to the target: anything harder leaves the solver stuck,
         // which rejects the removal without running expensive searches.
         let capped = LogicalSolver(techniques: solver.techniques.filter { $0.id.tier <= tier })
@@ -31,7 +31,7 @@ public struct ClassicGenerator: Sendable {
             let saved = cells.map { givens[$0] }
             for p in cells { givens[p] = 0 }
             if BruteForceSolver.countSolutions(givens) == 1,
-               let report = Grader.grade(givens, solution: solution, solver: capped) {
+               let report = Grader.grade(givens, solution: solution, solver: capped, deadline: deadline) {
                 accepted = report
             } else {
                 for (p, v) in zip(cells, saved) { givens[p] = v }

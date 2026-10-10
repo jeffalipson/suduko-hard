@@ -25,11 +25,12 @@ public struct LogicalSolver: Sendable {
         return nil
     }
 
-    /// Steps until solved, stuck, or `maxSteps` (a guard against malformed boards).
-    public func solve(_ start: Board, maxSteps: Int = 1000) -> SolveResult {
+    /// Steps until solved, stuck, `maxSteps` (a guard against malformed boards), or `deadline`.
+    public func solve(_ start: Board, maxSteps: Int = 1000, deadline: ContinuousClock.Instant? = nil) -> SolveResult {
         var board = start
         var steps: [Step] = []
-        while !board.isSolved, steps.count < maxSteps, let step = nextStep(on: board) {
+        while !board.isSolved, steps.count < maxSteps, deadline.map({ ContinuousClock.now < $0 }) ?? true,
+              let step = nextStep(on: board) {
             board.apply(step)
             steps.append(step)
         }
