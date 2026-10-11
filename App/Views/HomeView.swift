@@ -87,7 +87,7 @@ struct HomeView: View {
             ForEach(Tier.allCases, id: \.self) { tier in
                 let key = QueueKey(mode: mode, tier: tier)
                 Button { open(key) } label: {
-                    TierRow(tier: tier, mode: mode, inProgress: model.resumable(key), best: bestTime(key))
+                    TierRow(tier: tier, inProgress: model.resumable(key), best: bestTime(key))
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("tier-\(tier.name)")
@@ -330,22 +330,14 @@ private struct CageGlyph: View {
 
 private struct TierRow: View {
     let tier: Tier
-    let mode: Mode
     let inProgress: GameSession?
     let best: Double?
 
     var body: some View {
         HStack(alignment: .center, spacing: 14) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(tier.name.capitalized)
-                    .font(.system(.title3, design: .rounded).weight(.bold))
-                    .foregroundStyle(HomePalette.ink)
-                Text(TierCopy.demands(tier, mode))
-                    .font(.subheadline)
-                    .foregroundStyle(HomePalette.muted)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
-            }
+            Text(tier.name.capitalized)
+                .font(.system(.title3, design: .rounded).weight(.bold))
+                .foregroundStyle(HomePalette.ink)
             Spacer(minLength: 8)
             VStack(alignment: .trailing, spacing: 6) {
                 LevelPips(level: tier.rawValue + 1)
@@ -384,27 +376,5 @@ private struct LevelPips: View {
             }
         }
         .accessibilityHidden(true)
-    }
-}
-
-/// What each tier asks of you, in a phrase.
-enum TierCopy {
-    static func demands(_ tier: Tier, _ mode: Mode) -> String {
-        switch (mode, tier) {
-        case (.classic, .easy): return "Singles only"
-        case (.classic, .medium): return "Pairs, pointing, box/line"
-        case (.classic, .hard): return "Triples and quads"
-        case (.classic, .expert): return "X-Wings, XY-Wings, skyscrapers"
-        case (.classic, .fiendish): return "Finned fish, coloring, W-Wings"
-        case (.classic, .diabolical): return "Chains, ALS, Sue de Coq"
-        case (.classic, .nightmare): return "Forcing chains"
-        case (.killer, .easy): return "Cage sums with a few givens"
-        case (.killer, .medium): return "Cage combinations"
-        case (.killer, .hard): return "The 45 rule"
-        case (.killer, .expert): return "No givens, 45 rule across two houses"
-        case (.killer, .fiendish): return "No givens, cages up to six"
-        case (.killer, .diabolical): return "Chains through big cages"
-        case (.killer, .nightmare): return "Forcing chains, cages up to eight"
-        }
     }
 }
