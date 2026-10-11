@@ -18,16 +18,6 @@ struct ControlsView: View {
                 .pickerStyle(.segmented)
                 .accessibilityIdentifier("inputMode")
             }
-            Button {
-                session.setAutoCandidates(!session.autoCandidateMode)
-                onChange()
-            } label: {
-                Label("Auto candidates", systemImage: session.autoCandidateMode ? "checkmark.square.fill" : "square")
-                    .font(.subheadline)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .accessibilityIdentifier("autoCandidates")
-            .accessibilityValue(session.autoCandidateMode ? "on" : "off")
             HStack(spacing: 6) {
                 ForEach(1...9, id: \.self) { d in
                     let done = session.placedCount(of: d) >= 9
@@ -55,6 +45,11 @@ struct ControlsView: View {
                         showCageHelper = true
                     }
                 }
+                tool("Auto", session.autoCandidateMode ? "checkmark.square.fill" : "square", id: "autoCandidates") {
+                    session.setAutoCandidates(!session.autoCandidateMode)
+                }
+                .accessibilityLabel("Auto candidates")
+                .accessibilityValue(session.autoCandidateMode ? "on" : "off")
                 tool("Hint", "lightbulb", id: "hint", notify: false) { onHint() }
             }
         }
