@@ -128,18 +128,35 @@ struct BoardView: View {
         for (i, cage) in session.puzzle.cages.enumerated() {
             let members = Set(cage.cells)
             var path = Path()
-            for c in cage.cells {
-                let r = rect(c, unit)
-                let up = c >= 9 && members.contains(c - 9)
-                let down = c < 72 && members.contains(c + 9)
-                let left = c % 9 > 0 && members.contains(c - 1)
-                let right = c % 9 < 8 && members.contains(c + 1)
-                let x0 = left ? r.minX : r.minX + inset, x1 = right ? r.maxX : r.maxX - inset
-                let y0 = up ? r.minY : r.minY + inset, y1 = down ? r.maxY : r.maxY - inset
-                if !up { path.move(to: CGPoint(x: x0, y: r.minY + inset)); path.addLine(to: CGPoint(x: x1, y: r.minY + inset)) }
-                if !down { path.move(to: CGPoint(x: x0, y: r.maxY - inset)); path.addLine(to: CGPoint(x: x1, y: r.maxY - inset)) }
-                if !left { path.move(to: CGPoint(x: r.minX + inset, y: y0)); path.addLine(to: CGPoint(x: r.minX + inset, y: y1)) }
-                if !right { path.move(to: CGPoint(x: r.maxX - inset, y: y0)); path.addLine(to: CGPoint(x: r.maxX - inset, y: y1)) }
+            func member(_ r: Int, _ c: Int) -> Bool { (0..<9).contains(r) && (0..<9).contains(c) && members.contains(r * 9 + c) }
+            for cell in cage.cells {
+                let r = cell / 9, c = cell % 9
+                let rr = rect(cell, unit)
+                // Each edge runs to the cell border where the cage continues sideways, and one inset
+                // further where it turns an inner corner, so outlines join cleanly.
+                func reach(_ along: Bool, _ diagonal: Bool, _ border: CGFloat, _ outward: CGFloat) -> CGFloat {
+                    along ? (diagonal ? border + outward * inset : border) : border - outward * inset
+                }
+                if !member(r - 1, c) {
+                    let y = rr.minY + inset
+                    path.move(to: CGPoint(x: reach(member(r, c - 1), member(r - 1, c - 1), rr.minX, -1), y: y))
+                    path.addLine(to: CGPoint(x: reach(member(r, c + 1), member(r - 1, c + 1), rr.maxX, 1), y: y))
+                }
+                if !member(r + 1, c) {
+                    let y = rr.maxY - inset
+                    path.move(to: CGPoint(x: reach(member(r, c - 1), member(r + 1, c - 1), rr.minX, -1), y: y))
+                    path.addLine(to: CGPoint(x: reach(member(r, c + 1), member(r + 1, c + 1), rr.maxX, 1), y: y))
+                }
+                if !member(r, c - 1) {
+                    let x = rr.minX + inset
+                    path.move(to: CGPoint(x: x, y: reach(member(r - 1, c), member(r - 1, c - 1), rr.minY, -1)))
+                    path.addLine(to: CGPoint(x: x, y: reach(member(r + 1, c), member(r + 1, c - 1), rr.maxY, 1)))
+                }
+                if !member(r, c + 1) {
+                    let x = rr.maxX - inset
+                    path.move(to: CGPoint(x: x, y: reach(member(r - 1, c), member(r - 1, c + 1), rr.minY, -1)))
+                    path.addLine(to: CGPoint(x: x, y: reach(member(r + 1, c), member(r + 1, c + 1), rr.maxY, 1)))
+                }
             }
             ctx.stroke(path, with: .color(Theme.cage), style: style)
             let anchor = rect(cage.cells.min()!, unit)
