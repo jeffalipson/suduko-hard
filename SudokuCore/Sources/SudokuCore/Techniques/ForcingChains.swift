@@ -123,3 +123,29 @@ public struct ForcingChain: Technique {
         return nil
     }
 }
+
+extension ForcingChain {
+    /// What follows from assuming `candidate` true (or false), step by step with this chain's
+    /// propagation, stopping once `target` holds. `contradiction` is true if the grid breaks.
+    /// Used to explain a forcing-chain step branch by branch.
+    public func trace(_ board: Board, assuming candidate: CellDigit, isTrue: Bool,
+                      until target: (Board) -> Bool) -> (steps: [Step], contradiction: Bool) {
+        var b = board
+        if isTrue { b.place(candidate.digit, at: candidate.cell) } else { b.eliminate(candidate.digit, at: candidate.cell) }
+        let solver = LogicalSolver(techniques: propagation)
+        var steps: [Step] = []
+        for _ in 0..<300 {
+            if b.isContradictory { return (steps, true) }
+            if target(b) { return (steps, false) }
+            guard let step = solver.nextStep(on: b) else { break }
+            b.apply(step)
+            steps.append(step)
+        }
+        return (steps, b.isContradictory)
+    }
+
+    /// The forcing chain behind a technique ID, if it is one.
+    public static func named(_ id: TechniqueID) -> ForcingChain? {
+        [ForcingChain.cell, .unit, .digit, .nested].first { $0.id == id }
+    }
+}

@@ -62,3 +62,27 @@ import SudokuGame
         #expect(!g.log.isClean)
     }
 }
+
+@Suite struct HintLevelTests {
+    @Test func nudgesGetMoreSpecific() {
+        let step = Step(technique: .nakedSingle, patternCells: [rc(1, 4)], placements: [CellDigit(cell: rc(1, 4), digit: 2)],
+                        regions: [], digits: [2])
+        #expect(HintText.nudge(step, level: 1) == "Look for a Naked Single.")
+        #expect(HintText.nudge(step, level: 2) == "Look for a Naked Single on 2.")
+        #expect(HintText.nudge(step, level: 3) == "Look for a Naked Single on 2 in r2c5.")
+        #expect(HintText.nudgeLevels(step) == 3)
+    }
+
+    @Test func regionsBeatCellsAtTheLastLevel() {
+        let step = Step(technique: .xWing, patternCells: [1, 2], regions: [.row(1), .row(4), .column(2), .column(6)], digits: [5])
+        #expect(HintText.nudge(step, level: 3) == "Look for an X-Wing on 5 in row 2 and row 5.")
+    }
+
+    @Test func stepsWithoutDigitsSkipThatLevel() {
+        let step = Step(technique: .cageCombination, patternCells: [rc(3, 3), rc(3, 4)])
+        #expect(HintText.nudgeLevels(step) == 2)
+        #expect(HintText.nudge(step, level: 2) == "Look for Cage Combinations around r4c4.")
+    }
+}
+
+func rc(_ r: Int, _ c: Int) -> Int { r * 9 + c }

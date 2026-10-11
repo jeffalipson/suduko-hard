@@ -12,22 +12,34 @@ public enum HintText {
 
     public static func cell(_ c: Int) -> String { "r\(Geometry.row(c) + 1)c\(Geometry.col(c) + 1)" }
 
-    /// "an X-Wing", "an Empty Rectangle", "a Naked Pair".
-    static func article(_ name: String) -> String {
-        guard let first = name.first else { return "a" }
-        return "AEIOUX".contains(first) ? "an" : "a"
+    /// "an X-Wing", "an Empty Rectangle", "a Naked Pair", "Cage Combinations".
+    static func articled(_ name: String) -> String {
+        guard let first = name.first, !name.hasSuffix("s") else { return name }
+        return ("AEIOUX".contains(first) ? "an " : "a ") + name
     }
 
-    public static func nudge(_ step: Step) -> String {
-        let name = step.technique.displayName
-        let digits = step.digits.isEmpty ? "" : " on \(step.digits.map(String.init).joined(separator: "/"))"
-        if !step.regions.isEmpty {
-            let places = step.regions.prefix(2).map(region).joined(separator: " and ")
-            return "Look for \(article(name)) \(name)\(digits) in \(places)."
+    /// How many increasingly specific nudges a step has: technique, then digit (if any), then place.
+    public static func nudgeLevels(_ step: Step) -> Int { step.digits.isEmpty ? 2 : 3 }
+
+    /// Level 1 names the technique, level 2 adds the digit, level 3 adds where to look.
+    public static func nudge(_ step: Step, level: Int) -> String {
+        var text = "Look for \(articled(step.technique.displayName))"
+        let digitsGiven = !step.digits.isEmpty
+        if level >= 2 && digitsGiven { text += " on \(step.digits.map(String.init).joined(separator: "/"))" }
+        if level >= (digitsGiven ? 3 : 2) {
+            if !step.regions.isEmpty {
+                text += " in " + step.regions.prefix(2).map(region).joined(separator: " and ")
+            } else if step.patternCells.count == 1 {
+                text += " in \(cell(step.patternCells[0]))"
+            } else if let first = step.patternCells.first {
+                text += " around \(cell(first))"
+            }
         }
-        let around = step.patternCells.first.map { " around \(cell($0))" } ?? ""
-        return "Look for \(article(name)) \(name)\(digits)\(around)."
+        return text + "."
     }
+
+    /// The most specific nudge.
+    public static func nudge(_ step: Step) -> String { nudge(step, level: nudgeLevels(step)) }
 
     public static func message(_ d: HintDiagnosis) -> String {
         switch d {
