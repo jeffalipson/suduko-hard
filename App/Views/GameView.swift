@@ -18,6 +18,10 @@ struct GameView: View {
     /// Hint levels already logged for the current diagnosis (each counted once).
     @State private var loggedLevels: Set<String> = []
 
+    /// How many nudge levels the current hint has; the spotlight comes after them.
+    private var nudgeLevels: Int { hintStep.map(HintText.nudgeLevels) ?? 1 }
+    private var spotlightOn: Bool { hintStep != nil && hintLevel > nudgeLevels }
+
     private var hintStep: Step? {
         if case .step(let step) = diagnosis { return step }
         return nil
@@ -37,6 +41,14 @@ struct GameView: View {
             guard var s = model.resumable(key) else { return }
             s.setPaused(false)
             if ProcessInfo.processInfo.arguments.contains("-auto") { s.setAutoCandidates(true) }   // screenshots
+            if ProcessInfo.processInfo.arguments.contains("-nearlysolved") {   // UI tests: one cell left
+                let open = (0..<81).filter { s.entries[$0] == 0 }
+                for c in open.dropLast() {
+                    s.selected = c
+                    s.input(s.puzzle.solution[c], settings: GameSettings())
+                }
+                s.selected = open.last
+            }
             session = s
         }
         .onReceive(timer) { _ in
@@ -59,9 +71,9 @@ struct GameView: View {
         VStack(spacing: 16) {
             ZStack {
                 BoardView(session: s.wrappedValue, settings: model.settings,
-                          spotlight: hintLevel >= 2 ? Set(hintStep?.patternCells ?? []) : [],
-                          pattern: hintLevel >= 2 ? (hintStep?.patternCandidates ?? []) : [],
-                          secondary: hintLevel >= 2 ? (hintStep?.groups.dropFirst(hintStep?.technique == .simpleColoring ? 1 : 0).flatMap { $0 } ?? []) : []) { cell in
+                          spotlight: spotlightOn ? Set(hintStep?.patternCells ?? []) : [],
+                          pattern: spotlightOn ? (hintStep?.patternCandidates ?? []) : [],
+                          secondary: spotlightOn ? (hintStep?.groups.dropFirst(hintStep?.technique == .simpleColoring ? 1 : 0).flatMap { $0 } ?? []) : []) { cell in
                     s.wrappedValue.selected = cell
                 }
                 .opacity(s.wrappedValue.isPaused ? 0 : 1)
@@ -77,11 +89,9 @@ struct GameView: View {
             }
             .padding(.horizontal, 8)
             if let diagnosis, !s.wrappedValue.isPaused {
-                HintBar(diagnosis: diagnosis, level: hintLevel,
-                        onSpotlight: {
-                            hintLevel = 2
-                            logHint("spotlight", s)
-                        },
+                HintBar(diagnosis: diagnosis, level: hintLevel, nudgeLevels: nudgeLevels,
+                        onMore: { escalateHint(s) },
+                        onSpotlight: { escalateHint(s) },
                         onLesson: {
                             logHint("lesson", s)
                             showLesson = true
@@ -91,15 +101,9 @@ struct GameView: View {
             }
             ControlsView(session: s, settings: model.settings, onChange: { changed(s.wrappedValue) }, showCageHelper: $showCageHelper,
                          onHint: {
-                             // Each tap escalates: nudge → spotlight → lesson.
+                             // Each tap escalates: technique → digit → place → spotlight → lesson.
                              if hintStep != nil {
-                                 if hintLevel < 2 {
-                                     hintLevel = 2
-                                     logHint("spotlight", s)
-                                 } else {
-                                     logHint("lesson", s)
-                                     showLesson = true
-                                 }
+                                 if hintLevel <= nudgeLevels { escalateHint(s) } else { logHint("lesson", s); showLesson = true }
                                  return
                              }
                              let d = HintEngine.diagnose(s.wrappedValue)
@@ -142,7 +146,8 @@ struct GameView: View {
             changed(s.wrappedValue)
         }) {
             if let step = hintStep {
-                LessonView(technique: step.technique, example: model.lessons[step.technique]) {
+                LessonView(technique: step.technique, example: model.lessons[step.technique],
+                           yours: (HintEngine.playerBoard(s.wrappedValue), step)) {
                     pendingShowMe = step
                 }
             }
@@ -156,9 +161,19 @@ struct GameView: View {
         }
     }
 
-    private func logHint(_ level: String, _ s: Binding<GameSession>) {
+    /// Next hint level: a more specific nudge, then the spotlight.
+    private func escalateHint(_ s: Binding<GameSession>) {
+        hintLevel += 1
+        if hintLevel <= nudgeLevels {
+            logHint("nudge\(hintLevel)", s, counting: "nudge")
+        } else {
+            logHint("spotlight", s)
+        }
+    }
+
+    private func logHint(_ level: String, _ s: Binding<GameSession>, counting stat: String? = nil) {
         guard loggedLevels.insert(level).inserted else { return }
-        s.wrappedValue.useHint(level)
+        s.wrappedValue.useHint(stat ?? level)
         model.update(s.wrappedValue, for: key)
     }
 

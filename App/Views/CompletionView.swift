@@ -1,10 +1,12 @@
 import SwiftUI
+import SudokuCore
 import SudokuGame
 
 struct CompletionView: View {
     let session: GameSession
     let mistakesCounted: Bool
     let onDone: () -> Void
+    @State private var counts: [(technique: TechniqueID, count: Int)]?
 
     var body: some View {
         VStack(spacing: 18) {
@@ -22,13 +24,30 @@ struct CompletionView: View {
                 GridRow { Text("Assists"); Text("\(session.log.autoCandidates + session.log.cageHelper)") }
             }
             VStack(alignment: .leading, spacing: 6) {
-                Text("Techniques this puzzle needed").font(.headline)
-                Text(session.puzzle.techniquesRequired.map(\.displayName).joined(separator: ", "))
-                    .font(.subheadline).foregroundStyle(.secondary)
+                Text("What it took").font(.headline)
+                if let counts {
+                    Text(counts.isEmpty ? "Only singles." : counts.map { SolveSummary.phrase($0.technique, $0.count) }.joined(separator: ", ") + ", plus singles.")
+                        .font(.subheadline).foregroundStyle(.secondary)
+                } else {
+                    ProgressView().controlSize(.small)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            Button("Done", action: onDone).buttonStyle(.borderedProminent).accessibilityIdentifier("completionDone")
+            HStack {
+                if let counts {
+                    ShareLink(item: SolveSummary.shareText(session: session, counts: counts)) {
+                        Label("Share", systemImage: "square.and.arrow.up")
+                    }
+                    .buttonStyle(.bordered)
+                    .accessibilityIdentifier("shareSolve")
+                }
+                Button("Done", action: onDone).buttonStyle(.borderedProminent).accessibilityIdentifier("completionDone")
+            }
         }
         .padding(28)
+        .task {
+            let puzzle = session.puzzle
+            counts = await Task.detached { SolveSummary.techniqueCounts(puzzle) }.value
+        }
     }
 }

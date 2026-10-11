@@ -205,6 +205,13 @@ The "next step" is computed by running the LogicalSolver on the player's current
    - A written explanation: what the pattern is, why it works, what to look for.
    - A **"Show me"** button: closes the modal and animates the actual step on the player's board (pattern, then eliminations/placement applied). Logged as a reveal.
 
+### 7.2b Graduated nudges and walk-throughs (added)
+- Nudges get more specific with each tap: technique ("Look for a Naked Single."), then digit ("…on 2."), then place ("…in r2c5." / "…in row 2 and row 5."). Steps without digits skip the middle level. Each level is logged as a nudge.
+- "Explain step by step" walks through why a step works, one beat per frame, with true candidates green and false ones red: chains link by link (with the reason for each link), forcing chains branch by branch, fish and wings as short arguments, other techniques as pattern then conclusion. Available on the lesson example and, from a hint, on the player's own board ("Explain on my board"), where the last frame offers "Apply this step" (logged as a reveal).
+
+### 7.4 Sharing (added)
+The completion screen lists what the puzzle took (technique counts beyond singles, from the engine's solve) and offers Share with text like "I solved a Nightmare Killer Sudoku in 23:41. It took 1 Cell Forcing Chain, 2 Naked Pairs and plenty of singles. Clean solve: no hints, checks or reveals."
+
 ### 7.3 Lessons
 One curated example board plus explanation per technique (~35 lessons). Stored as data (board, step, text) in the app bundle and verified by tests to produce the intended step.
 

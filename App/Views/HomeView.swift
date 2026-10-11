@@ -13,6 +13,7 @@ struct HomeView: View {
     @State private var showSettings = false
     @State private var showStats = false
     @State private var debugLesson: TechniqueID?
+    @State private var debugExplain: TechniqueID?
     @State private var confirmNew: QueueKey?
     @State private var generating: QueueKey?
     @State private var generationTask: Task<Void, Never>?
@@ -43,6 +44,11 @@ struct HomeView: View {
             .sheet(isPresented: $showStats) { StatsView() }
             .sheet(item: $debugLesson) { id in
                 LessonView(technique: id, example: model.lessons[id]) {}
+            }
+            .sheet(item: $debugExplain) { id in
+                if let example = model.lessons[id] {
+                    NavigationStack { ExplainView(board: example.board, step: example.step, onApply: nil) }
+                }
             }
             .navigationDestination(item: $playing) { key in GameView(key: key) }
             .onAppear(perform: openFromLaunchArguments)
@@ -128,6 +134,7 @@ struct HomeView: View {
         let args = ProcessInfo.processInfo.arguments
         if args.contains("-stats") { showStats = true }
         if let i = args.firstIndex(of: "-lesson"), i + 1 < args.count { debugLesson = TechniqueID(rawValue: args[i + 1]) }
+        if let i = args.firstIndex(of: "-explain"), i + 1 < args.count { debugExplain = TechniqueID(rawValue: args[i + 1]) }
         if args.contains("-killer") { mode = .killer }
         guard let i = args.firstIndex(of: "-open"), i + 1 < args.count,
               let key = QueueKey.all.first(where: { $0.name == args[i + 1] }) else { return }

@@ -26,17 +26,24 @@ final class CoreLoopUITests: XCTestCase {
 }
 
 final class HintUITests: XCTestCase {
-    func testHintNudgeSpotlightLessonShowMe() {
+    func testHintEscalatesThenExplainsAndApplies() {
         let app = XCUIApplication()
         app.launchArguments = ["-uitest", "-open", "classic-easy", "-new"]
         app.launch()
         XCTAssertTrue(app.buttons["hint"].waitForExistence(timeout: 15))
         app.buttons["hint"].tap()
-        XCTAssertTrue(app.buttons["hintLesson"].waitForExistence(timeout: 10))
-        if app.buttons["hintSpotlight"].exists { app.buttons["hintSpotlight"].tap() }
+        let message = app.staticTexts["hintMessage"]
+        XCTAssertTrue(message.waitForExistence(timeout: 10))
+        let first = message.label
+        XCTAssertFalse(first.contains(" in "))            // level 1: technique only
+        while app.buttons["hintMore"].exists { app.buttons["hintMore"].tap() }
+        XCTAssertNotEqual(message.label, first)            // more specific now
         app.buttons["hintLesson"].tap()
         XCTAssertTrue(app.buttons["showMe"].waitForExistence(timeout: 5))
         app.buttons["showMe"].tap()
+        XCTAssertTrue(app.staticTexts["explainText"].waitForExistence(timeout: 15))
+        while !app.buttons["applyStep"].exists && app.buttons["explainNext"].isEnabled { app.buttons["explainNext"].tap() }
+        app.buttons["applyStep"].tap()
         XCTAssertTrue(app.buttons["undo"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["undo"].isEnabled)
     }
@@ -93,5 +100,22 @@ final class AutoCandidateUITests: XCTestCase {
         XCTAssertGreaterThan(withCandidates.count, 0)
         toggle.tap()
         XCTAssertEqual(withCandidates.count, 0)
+    }
+}
+
+final class ShareUITests: XCTestCase {
+    func testCompletionOffersShare() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uitest", "-open", "classic-easy", "-new", "-nearlysolved"]
+        app.launch()
+        XCTAssertTrue(app.buttons["hint"].waitForExistence(timeout: 15))
+        app.buttons["hint"].tap()
+        while app.buttons["hintMore"].exists { app.buttons["hintMore"].tap() }
+        // The last cell's answer: enter each digit until the completion screen appears.
+        for d in 1...9 where !app.buttons["completionDone"].exists {
+            app.buttons["digit-\(d)"].tap()
+            if !app.buttons["completionDone"].exists { app.buttons["erase"].tap() }
+        }
+        XCTAssertTrue(app.buttons["shareSolve"].waitForExistence(timeout: 15))
     }
 }

@@ -2,10 +2,13 @@ import SwiftUI
 import SudokuCore
 import SudokuGame
 
-/// The lesson modal: animated example, explanation, and "Show me" on the player's board.
+/// The lesson modal: animated example, explanation, step-by-step walk-throughs on the example and
+/// on the player's own board (which ends by applying the step).
 struct LessonView: View {
     let technique: TechniqueID
     let example: LessonExample?
+    /// The player's board and the hint step, when opened from a hint.
+    var yours: (board: Board, step: Step)? = nil
     let onShowMe: () -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var phase = 0
@@ -33,15 +36,29 @@ struct LessonView: View {
                         Text(caption).font(.footnote).foregroundStyle(.secondary)
                     }
                     Text(LessonText.explanation(for: technique)).font(.body)
-                    Button {
-                        onShowMe()
-                        dismiss()
-                    } label: {
-                        Label("Show me on my board", systemImage: "wand.and.stars").frame(maxWidth: .infinity)
+                    if let example {
+                        NavigationLink {
+                            ExplainView(board: example.board, step: example.step, onApply: nil)
+                        } label: {
+                            Label("Explain step by step", systemImage: "list.number").frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
+                        .accessibilityIdentifier("explainExample")
                     }
-                    .buttonStyle(.borderedProminent)
-                    .accessibilityIdentifier("showMe")
-                    Text("Show me counts as a reveal.").font(.caption).foregroundStyle(.secondary)
+                    if let yours {
+                        NavigationLink {
+                            ExplainView(board: yours.board, step: yours.step) {
+                                onShowMe()
+                                dismiss()
+                            }
+                        } label: {
+                            Label("Explain on my board", systemImage: "wand.and.stars").frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .accessibilityIdentifier("showMe")
+                        Text("Walks through the step on your board, then lets you apply it (counts as a reveal).")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
                 }
                 .padding()
             }
