@@ -51,6 +51,10 @@ final class AppModel {
         queues = state.queues
         games = state.games
         library = PuzzleLibrary.load(from: Bundle.main.resourceURL!)
+        // Killer puzzles reshuffled by an older version could have cages split into pieces.
+        let broken: (Puzzle) -> Bool = { $0.cages.contains { !$0.isConnected } }
+        queues.purge(where: broken)
+        games = games.filter { !broken($0.value.puzzle) }
         // Nothing should wait: give empty queues one library puzzle; generation fills the rest.
         queues.ensureNotEmpty(library: library, using: &rng)
         save()

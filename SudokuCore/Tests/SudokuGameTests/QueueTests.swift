@@ -70,3 +70,25 @@ func libraryPuzzle(_ id: String, mode: Mode = .classic) -> Puzzle {
         #expect(back == q)
     }
 }
+
+@Suite struct QueuePurgeTests {
+    @Test func purgeDropsMatchingPuzzles() {
+        let key = QueueKey(mode: .killer, tier: .easy)
+        var q = PuzzleQueues()
+        var rng = SplitMix64(seed: 1)
+        q.push(libraryPuzzle("good", mode: .killer), for: key, using: &rng)
+        var broken = libraryPuzzle("broken", mode: .killer)
+        broken.cages[0] = Cage(cells: [0, 2], sum: broken.cages[0].sum)   // not adjacent
+        q.push(broken, for: key, using: &rng)
+        #expect(q.count(key) == 2)
+        q.purge { $0.cages.contains { !$0.isConnected } }
+        #expect(q.count(key) == 1)
+        #expect(q.pop(key)?.id == "good")
+    }
+
+    @Test func cageConnectivity() {
+        #expect(Cage(cells: [0, 1, 10], sum: 6).isConnected)
+        #expect(!Cage(cells: [0, 2], sum: 3).isConnected)
+        #expect(!Cage(cells: [8, 9], sum: 3).isConnected)   // row wrap is not adjacency
+    }
+}

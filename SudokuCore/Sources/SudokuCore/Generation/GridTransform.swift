@@ -39,9 +39,18 @@ public struct GridTransform: Sendable, Equatable {
         return GridTransform(digitMap: [0] + digits, rowOrder: rows, colOrder: cols, transpose: Bool.random(using: &rng))
     }
 
-    /// Random transform suitable for `puzzle`: Killer puzzles keep their digits, since relabelling changes cage sums.
+    /// Random transform suitable for `puzzle`. Killer puzzles only get the 8 rotations/reflections of
+    /// the grid: relabelling digits changes cage sums, and shuffling rows or columns (even within a
+    /// band) separates neighbouring cells, which splits cages into disconnected pieces.
     public static func random<R: RandomNumberGenerator>(for puzzle: Puzzle, using rng: inout R) -> GridTransform {
-        random(using: &rng, relabelDigits: puzzle.cages.isEmpty)
+        guard !puzzle.cages.isEmpty else { return random(using: &rng) }
+        let forward = Array(0..<9)
+        return GridTransform(
+            digitMap: Array(0...9),
+            rowOrder: Bool.random(using: &rng) ? forward : forward.reversed(),
+            colOrder: Bool.random(using: &rng) ? forward : forward.reversed(),
+            transpose: Bool.random(using: &rng)
+        )
     }
 
     /// Shuffles the three bands (or stacks) and the three lines inside each.

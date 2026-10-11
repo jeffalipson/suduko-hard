@@ -55,6 +55,11 @@ public struct PuzzleQueues: Codable, Equatable, Sendable {
         }
     }
 
+    /// Drops queued puzzles matching `predicate` (e.g. ones saved by an older, buggy version).
+    public mutating func purge(where predicate: (Puzzle) -> Bool) {
+        for key in ready.keys { ready[key]?.removeAll(where: predicate) }
+    }
+
     public mutating func fillAllFromLibrary<R: RandomNumberGenerator>(_ library: PuzzleLibrary, using rng: inout R) {
         for key in QueueKey.all { refillFromLibrary(key, library: library, using: &rng) }
     }

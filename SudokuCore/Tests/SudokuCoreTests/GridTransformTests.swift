@@ -63,3 +63,30 @@ import SudokuCore
         }
     }
 }
+
+@Suite struct KillerTransformAdjacencyTests {
+    static func connected(_ cells: [Int]) -> Bool {
+        var seen: Set<Int> = [cells[0]]
+        var stack = [cells[0]]
+        while let c = stack.popLast() {
+            for n in [c - 9, c + 9, c % 9 > 0 ? c - 1 : -1, c % 9 < 8 ? c + 1 : -1] where cells.contains(n) && !seen.contains(n) {
+                seen.insert(n)
+                stack.append(n)
+            }
+        }
+        return seen.count == cells.count
+    }
+
+    @Test(arguments: 1...40)
+    func killerTransformsKeepCagesConnected(seed: Int) {
+        var rng = SplitMix64(seed: UInt64(seed))
+        let solution = BruteForceSolver.randomSolution(using: &rng)
+        let cages = KillerCages.partition(solution: solution, sizes: 2...5, using: &rng)
+        let puzzle = Puzzle(id: "k", mode: .killer, givens: Array(repeating: 0, count: 81), cages: cages, solution: solution,
+                            grade: Grade(tier: .hard, score: 1), techniquesRequired: [])
+        let t = GridTransform.random(for: puzzle, using: &rng)
+        let p = t.apply(to: puzzle)
+        for cage in p.cages { #expect(Self.connected(cage.cells), "seed \(seed): \(cage.cells)") }
+        #expect(p.cages.allSatisfy { $0.cells.map { p.solution[$0] }.reduce(0, +) == $0.sum })
+    }
+}
