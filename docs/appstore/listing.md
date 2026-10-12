@@ -1,7 +1,7 @@
 # App Store listing (draft)
 
 **Name (30 max):** Really Really Hard Sudoku
-**Subtitle (30 max):** Classic & Killer, Easy→Nightmare
+**Subtitle (30 max):** Classic & Killer to Nightmare
 **Category:** Games › Puzzle (secondary: Games › Board)
 **Age rating:** 4+
 **Price:** your call
