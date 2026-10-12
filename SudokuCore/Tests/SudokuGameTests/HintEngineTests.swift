@@ -14,7 +14,7 @@ import SudokuGame
         var g = GameSession(puzzle: classicPuzzle())
         g.selected = 2
         g.input(9, settings: GameSettings())
-        #expect(HintEngine.diagnose(g) == .mistake)
+        #expect(HintEngine.diagnose(g).isMistake)
     }
 
     @Test func ownNotesMissingTheAnswerAreSetAsideNotAMistake() {
@@ -22,7 +22,7 @@ import SudokuGame
         g.selected = 2
         g.inputMode = .candidate
         g.input(1, settings: GameSettings())   // answer is 4: partial marks are allowed
-        #expect(HintEngine.diagnose(g) != .mistake)
+        #expect(!HintEngine.diagnose(g).isMistake)
     }
 
     @Test func staleNotesAreIgnored() {
