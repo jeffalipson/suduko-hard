@@ -4,16 +4,16 @@ Repo: `/Users/jeffreylipson/suduko-hard` (GitHub: jeffalipson/suduko-hard, publi
 Branch with everything: `appstore-prep` (PR #11 into `main`). Read `docs/appstore/listing.md` first.
 
 ## 1. Finish the puzzle library
-A build of 100 puzzles per tier was started into `$TMPDIR/biglib/` (log: `$TMPDIR/biglib/log.txt`, 14 lines when done).
-- If the log has 14 lines: `cp $TMPDIR/biglib/*.json App/Library/`.
-- If it's missing or incomplete, copy whatever JSON files are there, then regenerate the rest (release build; Killer Diabolical is ~4 min per puzzle, Nightmare ~70 s):
+Already committed on `appstore-prep`: 100 puzzles per Classic tier, Killer Easy–Fiendish 100 each, Killer Nightmare 80.
+Only **Killer Diabolical** is short (20 in `App/Library/killer-diabolical.json`). A build of 60 was started into `$TMPDIR/biglib/killer-diabolical.json`:
+- If that file exists and has more than 20 puzzles, copy it to `App/Library/`.
+- Otherwise generate it (release build; ~4 min per puzzle, so 60 takes ~4 hours — it's fine to ship with fewer):
   ```bash
   swift build --package-path SudokuCore -c release
-  F=SudokuCore/.build/release/sudoku-forge
-  $F --mode killer --tier nightmare  --count 80 --timeout 1200 --out App/Library/killer-nightmare.json
-  $F --mode killer --tier diabolical --count 60 --timeout 1800 --out App/Library/killer-diabolical.json
+  SudokuCore/.build/release/sudoku-forge --mode killer --tier diabolical --count 60 --timeout 1800 \
+    --out App/Library/killer-diabolical.json
   ```
-- Check counts: `python3 -c "import json,glob; [print(f, len(json.load(open(f)))) for f in sorted(glob.glob('App/Library/*.json'))]"` — every file should have puzzles.
+- Check counts: `python3 -c "import json,glob; [print(f, len(json.load(open(f)))) for f in sorted(glob.glob('App/Library/*.json'))]"`.
 - Commit on `appstore-prep`, push, then merge: `gh pr merge 11 --merge`.
 
 ## 2. Verify the web pages (GitHub Pages serves `docs/` on `main`)
