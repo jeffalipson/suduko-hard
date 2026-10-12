@@ -131,6 +131,7 @@ struct HomeView: View {
 
     /// `-open killer-hard` jumps straight into a game (used for screenshots and UI tests).
     private func openFromLaunchArguments() {
+        #if DEBUG
         let args = ProcessInfo.processInfo.arguments
         if args.contains("-stats") { showStats = true }
         if let i = args.firstIndex(of: "-lesson"), i + 1 < args.count { debugLesson = TechniqueID(rawValue: args[i + 1]) }
@@ -140,6 +141,7 @@ struct HomeView: View {
               let key = QueueKey.all.first(where: { $0.name == args[i + 1] }) else { return }
         mode = key.mode
         if args.contains("-new") { startNew(key) } else { open(key) }
+        #endif
     }
 
     private func open(_ key: QueueKey) {

@@ -40,6 +40,7 @@ struct GameView: View {
             // Opening a game (new or resumed) starts the clock; pausing only applies while away.
             guard var s = model.resumable(key) else { return }
             s.setPaused(false)
+            #if DEBUG
             if ProcessInfo.processInfo.arguments.contains("-auto") { s.setAutoCandidates(true) }   // screenshots
             if ProcessInfo.processInfo.arguments.contains("-nearlysolved") {   // UI tests: one cell left
                 let open = (0..<81).filter { s.entries[$0] == 0 }
@@ -49,6 +50,7 @@ struct GameView: View {
                 }
                 s.selected = open.last
             }
+            #endif
             session = s
         }
         .onReceive(timer) { _ in
