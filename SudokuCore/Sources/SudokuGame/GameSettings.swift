@@ -1,3 +1,8 @@
+/// Light, dark, or follow the system.
+public enum Appearance: String, Codable, CaseIterable, Sendable {
+    case system, light, dark
+}
+
 /// Player toggles (spec §6.3). Only highlighting is on by default.
 public struct GameSettings: Codable, Equatable, Sendable {
     public var autoCandidates = false
@@ -6,11 +11,12 @@ public struct GameSettings: Codable, Equatable, Sendable {
     public var cageHelper = false
     public var remainingSum = false
     public var highlightMatching = true
+    public var appearance = Appearance.system
 
     public init() {}
 
     private enum CodingKeys: String, CodingKey {
-        case autoCandidates, autoRemoveCandidates, mistakeHighlighting, cageHelper, remainingSum, highlightMatching
+        case autoCandidates, autoRemoveCandidates, mistakeHighlighting, cageHelper, remainingSum, highlightMatching, appearance
     }
 
     /// Missing keys (older or newer save files) fall back to defaults instead of failing.
@@ -23,5 +29,6 @@ public struct GameSettings: Codable, Equatable, Sendable {
         cageHelper = try c.decodeIfPresent(Bool.self, forKey: .cageHelper) ?? d.cageHelper
         remainingSum = try c.decodeIfPresent(Bool.self, forKey: .remainingSum) ?? d.remainingSum
         highlightMatching = try c.decodeIfPresent(Bool.self, forKey: .highlightMatching) ?? d.highlightMatching
+        appearance = (try? c.decodeIfPresent(Appearance.self, forKey: .appearance)) ?? d.appearance
     }
 }

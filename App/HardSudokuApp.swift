@@ -1,4 +1,5 @@
 import SwiftUI
+import SudokuGame
 
 @main
 struct HardSudokuApp: App {
@@ -15,12 +16,24 @@ struct HardSudokuApp: App {
         WindowGroup {
             HomeView()
                 .environment(model)
+                .preferredColorScheme(model.settings.appearance.colorScheme)
                 .modelContainer(model.container)
                 .task { await model.refillLoop() }
         }
         .onChange(of: phase) { _, new in
             if new == .background { model.save(); model.scheduleBackgroundRefill() }
             if new == .active { Task { await model.refillLoop() } }
+        }
+    }
+}
+
+extension Appearance {
+    /// nil follows the system setting.
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .system: return nil
+        case .light: return .light
+        case .dark: return .dark
         }
     }
 }

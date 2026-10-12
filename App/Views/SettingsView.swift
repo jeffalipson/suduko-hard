@@ -9,6 +9,15 @@ struct SettingsView: View {
         @Bindable var model = model
         NavigationStack {
             Form {
+                Section("Appearance") {
+                    Picker("Appearance", selection: $model.settings.appearance) {
+                        Text("System").tag(Appearance.system)
+                        Text("Light").tag(Appearance.light)
+                        Text("Dark").tag(Appearance.dark)
+                    }
+                    .pickerStyle(.segmented)
+                    .accessibilityIdentifier("appearancePicker")
+                }
                 Section("Assists (using them counts against a clean solve)") {
                     Toggle("Killer cage helper", isOn: $model.settings.cageHelper)
                 }
