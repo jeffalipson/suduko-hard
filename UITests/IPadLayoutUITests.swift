@@ -75,4 +75,16 @@ final class IPadLayoutUITests: XCTestCase {
         XCTAssertLessThanOrEqual(row.width, 700)
         XCTAssertEqual(row.midX, window.midX, accuracy: 2)
     }
+
+    /// iPadOS window controls sit at the top-left of a windowed app; Stats must not be underneath them.
+    func testHomeTopButtonsAvoidWindowControls() throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "iPad only")
+        let app = XCUIApplication()
+        app.launchArguments = ["-uitest"]
+        app.launch()
+        XCTAssertTrue(app.buttons["statsButton"].waitForExistence(timeout: 10))
+        let window = app.windows.firstMatch.frame
+        XCTAssertGreaterThan(app.buttons["statsButton"].frame.minX, window.midX)
+        XCTAssertLessThan(app.buttons["statsButton"].frame.maxX, app.buttons["settingsButton"].frame.minX)
+    }
 }

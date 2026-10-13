@@ -92,13 +92,15 @@ struct HomeView: View {
     // MARK: Sections
 
     private var topBar: some View {
-        HStack {
+        HStack(spacing: 24) {
+            // On iPad the window controls sit at the top-left of a windowed app, so both buttons go right.
+            if UIDevice.current.userInterfaceIdiom == .pad { Spacer() }
             Button { showStats = true } label: {
                 Image(systemName: "chart.bar.xaxis").font(.title3)
             }
             .accessibilityLabel("Stats")
             .accessibilityIdentifier("statsButton")
-            Spacer()
+            if UIDevice.current.userInterfaceIdiom != .pad { Spacer() }
             Button { showSettings = true } label: {
                 Image(systemName: "gearshape").font(.title3)
             }

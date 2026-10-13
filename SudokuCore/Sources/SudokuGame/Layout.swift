@@ -7,17 +7,19 @@ public enum GameLayout: Equatable, Sendable {
 
     /// Width of the controls column beside the board.
     public static let columnWidth: Double = 340
-    /// Smallest board worth putting beside the controls (about an iPhone board).
-    static let minimumBoard: Double = 360
-    /// Height the controls column needs.
-    static let minimumHeight: Double = 600
+    /// Smallest board worth putting beside the controls.
+    static let minimumBoard: Double = 240
+    /// Height the stacked controls (switch, two rows of keys, tools) take below the board.
+    static let stackedControlsHeight: Double = 300
 
-    /// `width` × `height` is the space below the navigation bar.
+    /// `width` × `height` is the space below the navigation bar. Picks whichever arrangement
+    /// gives the bigger board; the side column scrolls when the window is short.
     public static func choose(width: Double, height: Double) -> GameLayout {
-        guard width >= height, height >= minimumHeight else { return .stacked }
+        guard width >= height else { return .stacked }
+        let stacked = min(width - 16, height - stackedControlsHeight)
         // 16 pt padding top and bottom; 16 pt left, between and right.
-        let board = min(height - 32, width - columnWidth - 48)
-        return board >= minimumBoard ? .sideBySide(board: board) : .stacked
+        let side = min(height - 32, width - columnWidth - 48)
+        return side > stacked && side >= minimumBoard ? .sideBySide(board: side) : .stacked
     }
 }
 

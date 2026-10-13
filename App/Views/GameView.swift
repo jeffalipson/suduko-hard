@@ -89,11 +89,14 @@ struct GameView: View {
             case .sideBySide(let board):
                 HStack(alignment: .top, spacing: 16) {
                     boardArea(s).frame(width: board, height: board)
-                    VStack(spacing: 16) {
-                        controls(s, .column)
-                        hintBar(s)
-                        Spacer(minLength: 0)
+                    // Scrolls only when the window is too short for the whole column.
+                    ScrollView {
+                        VStack(spacing: 16) {
+                            controls(s, .column)
+                            hintBar(s)
+                        }
                     }
+                    .scrollBounceBehavior(.basedOnSize)
                     .frame(width: GameLayout.columnWidth)
                 }
                 .padding(16)

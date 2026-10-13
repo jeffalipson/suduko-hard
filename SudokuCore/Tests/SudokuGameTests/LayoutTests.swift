@@ -19,22 +19,30 @@ import SudokuGame
         #expect(GameLayout.choose(width: 1376, height: 960) == .sideBySide(board: 928))
     }
 
-    @Test func splitViewThirdsStackAndTwoThirdsGoSideBySide() {
+    @Test func splitViewsStackWhenThatGivesTheBiggerBoard() {
         #expect(GameLayout.choose(width: 440, height: 960) == .stacked)
         #expect(GameLayout.choose(width: 688, height: 960) == .stacked)
-        #expect(GameLayout.choose(width: 960, height: 960) == .sideBySide(board: 572))
+        // Square ⅔ window: stacked board min(944, 660) = 660 beats side-by-side 572.
+        #expect(GameLayout.choose(width: 960, height: 960) == .stacked)
     }
 
-    @Test func shortWideWindowStacks() {
-        #expect(GameLayout.choose(width: 1000, height: 500) == .stacked)
-        #expect(GameLayout.choose(width: 1000, height: 599) == .stacked)
+    @Test func shortWideWindowGoesSideBySide() {
+        // Stacked would leave a tiny board (height − 300); beside the controls it stays big.
+        #expect(GameLayout.choose(width: 1000, height: 390) == .sideBySide(board: 358))
+        #expect(GameLayout.choose(width: 1000, height: 500) == .sideBySide(board: 468))
         #expect(GameLayout.choose(width: 1000, height: 600) == .sideBySide(board: 568))
     }
 
-    @Test func boardBelowMinimumStacks() {
-        // width − 388 = 359 < 360
-        #expect(GameLayout.choose(width: 747, height: 700) == .stacked)
-        #expect(GameLayout.choose(width: 748, height: 700) == .sideBySide(board: 360))
+    @Test func picksTheBiggerBoardNearTheSwitchPoint() {
+        // stacked min(1084, 500) = 500 vs side-by-side min(768, 712) = 712
+        #expect(GameLayout.choose(width: 1100, height: 800) == .sideBySide(board: 712))
+        // stacked min(884, 600) = 600 vs side-by-side min(868, 512) = 512
+        #expect(GameLayout.choose(width: 900, height: 900) == .stacked)
+    }
+
+    @Test func tinyWindowsStack() {
+        // Side-by-side board would be under 240.
+        #expect(GameLayout.choose(width: 620, height: 260) == .stacked)
     }
 
     @Test func homeColumns() {
