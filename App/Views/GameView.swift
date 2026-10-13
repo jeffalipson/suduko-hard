@@ -126,7 +126,13 @@ struct GameView: View {
         }
         .navigationTitle("\(key.mode.rawValue.capitalized) · \(key.tier.name.capitalized)")
         .navigationBarTitleDisplayMode(.inline)
+        // Only the back arrow leaves the game: an edge swipe is too easy to trigger from the left column.
+        .navigationBarBackButtonHidden(true)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button("Back", systemImage: "chevron.left") { dismiss() }
+                    .accessibilityIdentifier("backButton")
+            }
             ToolbarItem(placement: .principal) {
                 Text(Self.clock(s.wrappedValue.elapsed)).monospacedDigit().font(.headline).accessibilityIdentifier("clock")
             }

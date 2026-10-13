@@ -39,7 +39,7 @@ import SudokuGame
 
     @Test func incompleteCandidatesOfferAutoMode() {
         let d = HintDiagnosis.incomplete(.row(3))
-        #expect(HintText.message(d, level: 1) == "This hint needs candidates in row 4. Fill them in, or turn on Auto candidates.")
+        #expect(HintText.message(d, level: 1) == "This hint needs candidates in row 4. Fill them in, or turn on Auto Pencil.")
         #expect(HintText.offersAutoCandidates(d))
         #expect(!HintText.offersAutoCandidates(.solved))
     }

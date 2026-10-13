@@ -78,6 +78,8 @@ struct BoardView: View {
 
         // Digits and notes (auto candidates or the player's own).
         let shown = session.displayedNotes()
+        // Cells carrying a cage total: their notes sit below the total instead of under it.
+        let labelled = Set(session.puzzle.cages.map { $0.cells.min()! })
         for c in 0..<81 {
             let r = rect(c, unit)
             let v = session.entries[c]
@@ -94,12 +96,16 @@ struct BoardView: View {
                     let col = CGFloat((d - 1) % 3), row = CGFloat((d - 1) / 3)
                     let inset = session.puzzle.cages.isEmpty ? unit * 0.06 : unit * 0.14
                     let w = (unit - 2 * inset) / 3
-                    let p = CGPoint(x: r.minX + inset + w * (col + 0.5), y: r.minY + inset + w * (row + 0.5))
+                    // Rows run from just below the cage total down to the usual bottom inset.
+                    let squeezed = labelled.contains(c)
+                    let top = squeezed ? unit * 0.30 : inset
+                    let h = (unit - inset * (squeezed ? 0.9 : 1) - top) / 3
+                    let p = CGPoint(x: r.minX + inset + w * (col + 0.5), y: r.minY + top + h * (row + 0.5))
                     let cd = CellDigit(cell: c, digit: d)
                     let marked = marks.contains(cd)
                     let highlighted = pattern.contains(cd) || secondary.contains(cd)
                     let color = marked ? Theme.wrong : (secondary.contains(cd) ? Color.orange : (pattern.contains(cd) ? Color.green : Theme.note))
-                    ctx.draw(Text("\(d)").font(.system(size: unit * 0.22, weight: marked || highlighted ? .bold : .regular))
+                    ctx.draw(Text("\(d)").font(.system(size: unit * (squeezed ? 0.17 : 0.22), weight: marked || highlighted ? .bold : .regular))
                         .foregroundStyle(color), at: p)
                     if marked {
                         var strike = Path()

@@ -23,7 +23,7 @@ HINTS THAT TEACH
 
 PLAY YOUR WAY
 • Normal and candidate entry, unlimited undo and redo
-• Auto candidates that remember the ones you cross out
+• Auto Pencil marks that remember the ones you cross out
 • Killer cage helper and remaining sums (optional)
 • Check and reveal when you need them — tracked in your stats, never forced on you
 
