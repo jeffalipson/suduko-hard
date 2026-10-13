@@ -69,7 +69,9 @@ struct ControlsView: View {
 
     @ViewBuilder private var toolButtons: some View {
         tool("Undo", "arrow.uturn.backward", id: "undo", enabled: session.canUndo) { session.undo() }
+            .keyboardShortcut("z", modifiers: .command)
         tool("Redo", "arrow.uturn.forward", id: "redo", enabled: session.canRedo) { session.redo() }
+            .keyboardShortcut("z", modifiers: [.command, .shift])
         tool("Erase", "eraser", id: "erase") { session.erase() }
         if settings.cageHelper && !session.puzzle.cages.isEmpty {
             tool("Cage", "sum", id: "cageHelper", enabled: session.selected != nil) {

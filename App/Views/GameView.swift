@@ -18,6 +18,7 @@ struct GameView: View {
     @State private var pendingShowMe: Step?
     /// Hint levels already logged for the current diagnosis (each counted once).
     @State private var loggedLevels: Set<String> = []
+    @FocusState private var boardFocused: Bool
 
     /// How many nudge levels the current hint has; the spotlight comes after them.
     private var nudgeLevels: Int { diagnosis.map(HintText.levels(for:)) ?? 1 }
@@ -99,6 +100,13 @@ struct GameView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
         }
+        .focusable()
+        .focused($boardFocused)
+        .focusEffectDisabled()
+        .onAppear { boardFocused = true }
+        .onChange(of: showLesson) { _, open in if !open { boardFocused = true } }
+        .onChange(of: showCageHelper) { _, open in if !open { boardFocused = true } }
+        .onKeyPress(phases: .down) { press in handleKey(press, s) }
         .regularWidthTypeBoost(regular)
         .navigationTitle("\(key.mode.rawValue.capitalized) · \(key.tier.name.capitalized)")
         .navigationBarTitleDisplayMode(.inline)
@@ -209,6 +217,34 @@ struct GameView: View {
                      },
                      arrangement: arrangement, scale: regular ? 1.3 : 1)
             .disabled(s.wrappedValue.isPaused)
+    }
+
+    /// Hardware keyboard: arrows, 1–9, Delete, Space. ⌘ shortcuts are left to the buttons.
+    private func handleKey(_ press: KeyPress, _ s: Binding<GameSession>) -> KeyPress.Result {
+        guard !s.wrappedValue.isPaused, !s.wrappedValue.isComplete, !press.modifiers.contains(.command) else { return .ignored }
+        let key: GameKey
+        switch press.key {
+        case .upArrow: key = .up
+        case .downArrow: key = .down
+        case .leftArrow: key = .left
+        case .rightArrow: key = .right
+        case .delete, .deleteForward: key = .delete
+        default: key = .text(press.characters)
+        }
+        guard let action = KeyCommand.action(for: key) else { return .ignored }
+        switch action {
+        case .move(let rows, let columns):
+            s.wrappedValue.moveSelection(rows: rows, columns: columns)
+        case .digit(let d):
+            s.wrappedValue.input(d, settings: model.settings)
+            changed(s.wrappedValue)
+        case .erase:
+            s.wrappedValue.erase()
+            changed(s.wrappedValue)
+        case .toggleInputMode:
+            s.wrappedValue.inputMode = s.wrappedValue.inputMode == .normal ? .candidate : .normal
+        }
+        return .handled
     }
 
     /// Next hint level: a more specific nudge, then the spotlight.
