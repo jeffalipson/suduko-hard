@@ -24,7 +24,7 @@ Both must load (Pages can take a few minutes after the merge).
 ## 3. Signing
 - Find the Team ID (Xcode › Settings › Accounts, or ask the user). In `project.yml` under the `HardSudoku` target's `settings.base`, add `DEVELOPMENT_TEAM: <TEAMID>` and `CODE_SIGN_STYLE: Automatic`, then `xcodegen generate`.
 - Bundle ID is `com.jeffreylipson.hardsudoku`. Automatic signing with `-allowProvisioningUpdates` registers it.
-- Bump `CURRENT_PROJECT_VERSION` in `project.yml` for every upload.
+- Bump `CURRENT_PROJECT_VERSION` in `project.yml` for every upload (Info.plist reads it). The export also auto-increments the build number if it is already taken (`manageAppVersionAndBuildNumber`), so check the uploaded number in TestFlight.
 
 ## 4. Tests before shipping
 ```bash
