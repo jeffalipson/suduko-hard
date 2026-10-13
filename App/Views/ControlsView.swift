@@ -13,6 +13,8 @@ struct ControlsView: View {
     var arrangement: ControlsArrangement = .row
     /// Size multiplier for keys and tools (1.3 in iPad-sized windows).
     var scale: CGFloat = 1
+    /// ⌘Z / ⇧⌘Z; off while a sheet is up so they can't change the board behind it.
+    var shortcutsEnabled = true
 
     var body: some View {
         VStack(spacing: 14) {
@@ -69,9 +71,9 @@ struct ControlsView: View {
 
     @ViewBuilder private var toolButtons: some View {
         tool("Undo", "arrow.uturn.backward", id: "undo", enabled: session.canUndo) { session.undo() }
-            .keyboardShortcut("z", modifiers: .command)
+            .keyboardShortcut(shortcutsEnabled ? KeyboardShortcut("z", modifiers: .command) : nil)
         tool("Redo", "arrow.uturn.forward", id: "redo", enabled: session.canRedo) { session.redo() }
-            .keyboardShortcut("z", modifiers: [.command, .shift])
+            .keyboardShortcut(shortcutsEnabled ? KeyboardShortcut("z", modifiers: [.command, .shift]) : nil)
         tool("Erase", "eraser", id: "erase") { session.erase() }
         if settings.cageHelper && !session.puzzle.cages.isEmpty {
             tool("Cage", "sum", id: "cageHelper", enabled: session.selected != nil) {
@@ -110,7 +112,7 @@ struct ControlsView: View {
             if notify { onChange() }
         } label: {
             VStack(spacing: 4) {
-                Image(systemName: icon).font(.system(size: 20 * scale))
+                Image(systemName: icon).font(.title3)   // iPad sizes come from regularWidthTypeBoost
                 Text(title).font(.caption)
             }
             .frame(maxWidth: .infinity)

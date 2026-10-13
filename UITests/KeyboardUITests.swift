@@ -48,4 +48,27 @@ final class KeyboardUITests: XCTestCase {
         app.typeKey(.space, modifierFlags: [])
         XCTAssertEqual(app.segmentedControls["inputMode"].buttons["Candidate"].isSelected, true)
     }
+
+    /// ⌘Z inside a sheet must not undo a move on the board behind it.
+    func testUndoShortcutIgnoredWhileSheetOpen() {
+        let app = launchGame()
+        app.typeKey(.space, modifierFlags: [])               // candidate mode: a pencil mark is never a mistake
+        app.typeKey(.rightArrow, modifierFlags: [])
+        for _ in 0..<9 {
+            app.typeKey("1", modifierFlags: [])
+            if app.buttons["undo"].isEnabled { break }
+            app.typeKey(.rightArrow, modifierFlags: [])
+        }
+        XCTAssertTrue(app.buttons["undo"].isEnabled)
+        app.buttons["hint"].tap()
+        XCTAssertTrue(app.staticTexts["hintMessage"].waitForExistence(timeout: 10))
+        while app.buttons["hintMore"].exists { app.buttons["hintMore"].tap() }
+        app.buttons["hintLesson"].tap()
+        XCTAssertTrue(app.buttons["showMe"].waitForExistence(timeout: 5))
+        app.typeKey("z", modifierFlags: .command)
+        app.typeKey("z", modifierFlags: .command)
+        app.swipeDown(velocity: .fast)
+        XCTAssertTrue(app.buttons["undo"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["undo"].isEnabled, "the move behind the sheet was undone")
+    }
 }

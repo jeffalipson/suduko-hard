@@ -40,9 +40,11 @@ import SudokuGame
         #expect(GameLayout.choose(width: 900, height: 900) == .stacked)
     }
 
-    @Test func tinyWindowsStack() {
-        // Side-by-side board would be under 240.
-        #expect(GameLayout.choose(width: 620, height: 260) == .stacked)
+    @Test func quarterTiledWindowsGoSideBySide() {
+        // iPad 11" quarter tile: stacked would leave min(589, 50) = 50; beside the column it's 217.
+        #expect(GameLayout.choose(width: 605, height: 350) == .sideBySide(board: 217))
+        // iPad mini quarter tile: stacked 10 vs side-by-side 178.
+        #expect(GameLayout.choose(width: 566, height: 310) == .sideBySide(board: 178))
     }
 
     @Test func homeColumns() {

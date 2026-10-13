@@ -218,7 +218,8 @@ struct GameView: View {
                          }
                          startHint(s)
                      },
-                     arrangement: arrangement, scale: regular ? 1.3 : 1)
+                     arrangement: arrangement, scale: regular ? 1.3 : 1,
+                     shortcutsEnabled: !(showLesson || showCageHelper || showCompletion))
             .disabled(s.wrappedValue.isPaused)
     }
 

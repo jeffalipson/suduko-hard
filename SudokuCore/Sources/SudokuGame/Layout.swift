@@ -7,8 +7,6 @@ public enum GameLayout: Equatable, Sendable {
 
     /// Width of the controls column beside the board.
     public static let columnWidth: Double = 340
-    /// Smallest board worth putting beside the controls.
-    static let minimumBoard: Double = 240
     /// Height the stacked controls (switch, two rows of keys, tools) take below the board.
     static let stackedControlsHeight: Double = 300
 
@@ -19,7 +17,7 @@ public enum GameLayout: Equatable, Sendable {
         let stacked = min(width - 16, height - stackedControlsHeight)
         // 16 pt padding top and bottom; 16 pt left, between and right.
         let side = min(height - 32, width - columnWidth - 48)
-        return side > stacked && side >= minimumBoard ? .sideBySide(board: side) : .stacked
+        return side > stacked && side > 0 ? .sideBySide(board: side) : .stacked
     }
 }
 
