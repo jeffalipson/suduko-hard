@@ -64,7 +64,7 @@ public enum HintText {
             if level >= 3 { text += " It's \(cell(c))." }
             return text
         case .incomplete(let r):
-            return "This hint needs candidates in \(region(r)). Fill them in, or turn on Auto candidates."
+            return "This hint needs candidates in \(region(r)). Fill them in, or turn on Auto Pencil."
         case .step(let s):
             return nudge(s, level: level)
         case .beyond:

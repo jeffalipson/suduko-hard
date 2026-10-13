@@ -27,7 +27,7 @@ struct HintBar: View {
                 Button("More specific", action: onMore).buttonStyle(.bordered).accessibilityIdentifier("hintMore")
             }
             if HintText.offersAutoCandidates(diagnosis) {
-                Button("Turn on Auto candidates", action: onAutoCandidates)
+                Button("Turn on Auto Pencil", action: onAutoCandidates)
                     .buttonStyle(.borderedProminent)
                     .accessibilityIdentifier("hintAutoCandidates")
             }
