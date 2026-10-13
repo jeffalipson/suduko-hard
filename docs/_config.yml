@@ -1,0 +1,4 @@
+title: Really Really Hard Sudoku
+# Only the App Store pages are published; design notes stay in the repo.
+exclude:
+  - superpowers

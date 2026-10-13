@@ -41,13 +41,43 @@ public enum HintText {
     /// The most specific nudge.
     public static func nudge(_ step: Step) -> String { nudge(step, level: nudgeLevels(step)) }
 
-    public static func message(_ d: HintDiagnosis) -> String {
+    /// How many increasingly specific messages a diagnosis has.
+    public static func levels(for d: HintDiagnosis) -> Int {
         switch d {
-        case .solved: return "The puzzle is solved."
-        case .mistake: return "There's a mistake on your board. Use Check to find it."
-        case .incomplete(let r): return "Your candidates in \(region(r)) are incomplete — fill those in first."
-        case .step(let s): return nudge(s)
-        case .beyond: return "This position needs reasoning beyond the hint engine."
+        case .step(let step): return nudgeLevels(step)
+        case .mistake: return 3
+        default: return 1
         }
+    }
+
+    /// The hint text at a given level (clamped to the diagnosis's levels).
+    public static func message(_ d: HintDiagnosis, level: Int) -> String {
+        let level = max(1, min(level, levels(for: d)))
+        switch d {
+        case .solved:
+            return "The puzzle is solved."
+        case .mistake(let c, let kind):
+            var text = kind == .wrongDigit
+                ? "One of the digits on the board is wrong."
+                : "One of your crossed-out candidates was the right digit."
+            if level == 2 { text += " It's in box \(Geometry.box(c) + 1)." }
+            if level >= 3 { text += " It's \(cell(c))." }
+            return text
+        case .incomplete(let r):
+            return "This hint needs candidates in \(region(r)). Fill them in, or turn on Auto candidates."
+        case .step(let s):
+            return nudge(s, level: level)
+        case .beyond:
+            return "This position needs reasoning beyond the hint engine."
+        }
+    }
+
+    /// The most specific message.
+    public static func message(_ d: HintDiagnosis) -> String { message(d, level: levels(for: d)) }
+
+    /// Whether the hint should offer to turn on Auto candidates.
+    public static func offersAutoCandidates(_ d: HintDiagnosis) -> Bool {
+        if case .incomplete = d { return true }
+        return false
     }
 }

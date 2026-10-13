@@ -131,6 +131,7 @@ struct HomeView: View {
 
     /// `-open killer-hard` jumps straight into a game (used for screenshots and UI tests).
     private func openFromLaunchArguments() {
+        #if DEBUG
         let args = ProcessInfo.processInfo.arguments
         if args.contains("-stats") { showStats = true }
         if let i = args.firstIndex(of: "-lesson"), i + 1 < args.count { debugLesson = TechniqueID(rawValue: args[i + 1]) }
@@ -140,6 +141,7 @@ struct HomeView: View {
               let key = QueueKey.all.first(where: { $0.name == args[i + 1] }) else { return }
         mode = key.mode
         if args.contains("-new") { startNew(key) } else { open(key) }
+        #endif
     }
 
     private func open(_ key: QueueKey) {
@@ -191,32 +193,37 @@ private extension UIColor {
 
 // MARK: - Wordmark
 
-/// "Hard Sudoku" inside a dashed Killer cage, with 45 — every house's sum — as the cage total.
+/// "really really Hard Sudoku" inside a dashed Killer cage, with 45 — every house's sum — as the cage total.
 private struct CagedWordmark: View {
     var body: some View {
-        Text("Hard Sudoku")
-            .font(.system(size: 38, weight: .heavy, design: .rounded))
-            .foregroundStyle(HomePalette.ink)
-            .lineLimit(1)
-            .minimumScaleFactor(0.7)
-            .padding(.horizontal, 18)
-            .padding(.top, 18)
-            .padding(.bottom, 12)
-            .overlay {
-                RoundedRectangle(cornerRadius: 22)
-                    .strokeBorder(HomePalette.ink.opacity(0.55), style: StrokeStyle(lineWidth: 2, dash: [9, 7]))
-            }
-            .overlay(alignment: .topLeading) {
-                Text("45")
-                    .font(.system(size: 15, weight: .bold, design: .rounded))
-                    .foregroundStyle(HomePalette.ink)
-                    .padding(.horizontal, 6)
-                    .background(HomePalette.paper)
-                    .offset(x: 14, y: -10)
-            }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Hard Sudoku")
-            .accessibilityAddTraits(.isHeader)
+        VStack(alignment: .leading, spacing: -2) {
+            Text("really really")
+                .font(.system(size: 17, weight: .semibold, design: .rounded))
+                .foregroundStyle(HomePalette.muted)
+            Text("Hard Sudoku")
+                .font(.system(size: 38, weight: .heavy, design: .rounded))
+                .foregroundStyle(HomePalette.ink)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        }
+        .padding(.horizontal, 18)
+        .padding(.top, 18)
+        .padding(.bottom, 12)
+        .overlay {
+            RoundedRectangle(cornerRadius: 22)
+                .strokeBorder(HomePalette.ink.opacity(0.55), style: StrokeStyle(lineWidth: 2, dash: [9, 7]))
+        }
+        .overlay(alignment: .topLeading) {
+            Text("45")
+                .font(.system(size: 15, weight: .bold, design: .rounded))
+                .foregroundStyle(HomePalette.ink)
+                .padding(.horizontal, 6)
+                .background(HomePalette.paper)
+                .offset(x: 14, y: -10)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Really Really Hard Sudoku")
+        .accessibilityAddTraits(.isHeader)
     }
 }
 

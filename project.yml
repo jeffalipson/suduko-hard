@@ -23,12 +23,15 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         SWIFT_VERSION: "6.0"
         TARGETED_DEVICE_FAMILY: "1"
-        MARKETING_VERSION: "0.1"
+        MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
+        DEVELOPMENT_TEAM: MMLWY4X5FD
+        CODE_SIGN_STYLE: Automatic
     info:
       path: App/Info.plist
       properties:
         CFBundleDisplayName: Hard Sudoku
+        ITSAppUsesNonExemptEncryption: false
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UIBackgroundModes: [processing]

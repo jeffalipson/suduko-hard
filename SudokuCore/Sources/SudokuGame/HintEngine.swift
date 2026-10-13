@@ -1,14 +1,26 @@
 import SudokuCore
 
+public enum MistakeKind: Equatable, Sendable {
+    /// A placed digit that isn't the cell's answer.
+    case wrongDigit
+    /// In auto candidate mode, the player crossed out the cell's answer.
+    case removedAnswer
+}
+
 public enum HintDiagnosis: Equatable, Sendable {
     case solved
-    /// A wrong digit, or notes that leave out a cell's answer.
-    case mistake
+    /// Something Check would flag: the first such cell and what's wrong with it.
+    case mistake(cell: Int, kind: MistakeKind)
     /// The next step needs pencil marks the player hasn't made yet.
     case incomplete(Region)
     case step(Step)
     /// Nothing in the catalog applies (beyond Nightmare).
     case beyond
+
+    public var isMistake: Bool {
+        if case .mistake = self { return true }
+        return false
+    }
 }
 
 public enum HintEngine {
@@ -16,9 +28,9 @@ public enum HintEngine {
 
     public static func diagnose(_ session: GameSession) -> HintDiagnosis {
         if session.isComplete { return .solved }
-        for c in 0..<81 where session.entries[c] != 0 && session.isWrong(c) { return .mistake }
+        for c in 0..<81 where session.entries[c] != 0 && session.isWrong(c) { return .mistake(cell: c, kind: .wrongDigit) }
         // Only what Check can find counts as a mistake: wrong digits, and answers removed in auto mode.
-        for c in 0..<81 where session.ruledOutAnswer(c) { return .mistake }
+        for c in 0..<81 where session.ruledOutAnswer(c) { return .mistake(cell: c, kind: .removedAnswer) }
         let shown = usableNotes(session)
         let board = playerBoard(session)
         let solver: LogicalSolver = session.puzzle.mode == .classic ? .classic : .killer

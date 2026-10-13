@@ -71,7 +71,7 @@ import SudokuGame
         g.selected = 2
         g.inputMode = .candidate
         g.input(4, settings: s)                       // remove the answer by hand
-        #expect(HintEngine.diagnose(g) == .mistake)
+        #expect(HintEngine.diagnose(g).isMistake)
         #expect(!HintEngine.playerBoard(g).candidates[2].contains(4))
     }
 

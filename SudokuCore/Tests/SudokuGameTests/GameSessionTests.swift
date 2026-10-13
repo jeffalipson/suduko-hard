@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 import SudokuCore
 import SudokuGame
@@ -83,5 +84,17 @@ func classicPuzzle() -> Puzzle {
         }
         #expect(g.isComplete)
         #expect(g.placedCount(of: 9) == 9)
+    }
+}
+
+@Suite struct AppearanceSettingTests {
+    @Test func defaultsToSystemAndRoundTrips() throws {
+        var s = GameSettings()
+        #expect(s.appearance == .system)
+        s.appearance = .dark
+        let back = try JSONDecoder().decode(GameSettings.self, from: JSONEncoder().encode(s))
+        #expect(back.appearance == .dark)
+        let old = try JSONDecoder().decode(GameSettings.self, from: Data(#"{"highlightMatching":true}"#.utf8))
+        #expect(old.appearance == .system)
     }
 }

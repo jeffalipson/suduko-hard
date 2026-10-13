@@ -18,7 +18,13 @@ final class AppModel {
     let container: ModelContainer = AppModel.makeContainer()
 
     /// UI tests run with `-uitest`: an in-memory stats store and a scratch state file.
-    nonisolated static var isUITest: Bool { ProcessInfo.processInfo.arguments.contains("-uitest") }
+    nonisolated static var isUITest: Bool {
+        #if DEBUG
+        ProcessInfo.processInfo.arguments.contains("-uitest")
+        #else
+        false
+        #endif
+    }
 
     /// The stats store. A store that won't open (corrupt, or a failed migration) is deleted and
     /// recreated rather than crashing the app; as a last resort stats live in memory.

@@ -11,6 +11,7 @@ struct HintBar: View {
     let onMore: () -> Void
     let onSpotlight: () -> Void
     let onLesson: () -> Void
+    let onAutoCandidates: () -> Void
     let onClose: () -> Void
 
     var body: some View {
@@ -21,6 +22,14 @@ struct HintBar: View {
                     .accessibilityIdentifier("hintMessage")
                 Spacer()
                 Button("Close", systemImage: "xmark", action: onClose).labelStyle(.iconOnly)
+            }
+            if diagnosis.isMistake && level < nudgeLevels {
+                Button("More specific", action: onMore).buttonStyle(.bordered).accessibilityIdentifier("hintMore")
+            }
+            if HintText.offersAutoCandidates(diagnosis) {
+                Button("Turn on Auto candidates", action: onAutoCandidates)
+                    .buttonStyle(.borderedProminent)
+                    .accessibilityIdentifier("hintAutoCandidates")
             }
             if case .step = diagnosis {
                 HStack {
@@ -39,8 +48,5 @@ struct HintBar: View {
         .accessibilityIdentifier("hintBar")
     }
 
-    private var message: String {
-        if case .step(let step) = diagnosis { return HintText.nudge(step, level: min(level, nudgeLevels)) }
-        return HintText.message(diagnosis)
-    }
+    private var message: String { HintText.message(diagnosis, level: level) }
 }

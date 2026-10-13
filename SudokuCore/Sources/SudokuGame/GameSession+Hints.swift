@@ -37,3 +37,11 @@ extension GameSession {
         restore(Snapshot(entries: lessonPuzzle.givens, notes: notes))
     }
 }
+
+extension GameSession {
+    /// A mistake hint's last level shows the exact cell — the same information as Check, so it counts as one.
+    public mutating func pointOutMistake(_ cell: Int) {
+        log.checks += 1
+        flag([cell])
+    }
+}

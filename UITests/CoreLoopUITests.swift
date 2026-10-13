@@ -119,3 +119,21 @@ final class ShareUITests: XCTestCase {
         XCTAssertTrue(app.buttons["shareSolve"].waitForExistence(timeout: 15))
     }
 }
+
+final class AppearanceUITests: XCTestCase {
+    func testChoosingDarkAppliesImmediately() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uitest"]
+        app.launch()
+        app.buttons["settingsButton"].tap()
+        let picker = app.segmentedControls["appearancePicker"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 5))
+        picker.buttons["Dark"].tap()
+        XCTAssertTrue(picker.buttons["Dark"].isSelected)
+        app.buttons["Done"].tap()
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "home-forced-dark"
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
+}

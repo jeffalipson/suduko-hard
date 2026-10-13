@@ -19,7 +19,7 @@ struct GameView: View {
     @State private var loggedLevels: Set<String> = []
 
     /// How many nudge levels the current hint has; the spotlight comes after them.
-    private var nudgeLevels: Int { hintStep.map(HintText.nudgeLevels) ?? 1 }
+    private var nudgeLevels: Int { diagnosis.map(HintText.levels(for:)) ?? 1 }
     private var spotlightOn: Bool { hintStep != nil && hintLevel > nudgeLevels }
 
     private var hintStep: Step? {
@@ -40,6 +40,7 @@ struct GameView: View {
             // Opening a game (new or resumed) starts the clock; pausing only applies while away.
             guard var s = model.resumable(key) else { return }
             s.setPaused(false)
+            #if DEBUG
             if ProcessInfo.processInfo.arguments.contains("-auto") { s.setAutoCandidates(true) }   // screenshots
             if ProcessInfo.processInfo.arguments.contains("-nearlysolved") {   // UI tests: one cell left
                 let open = (0..<81).filter { s.entries[$0] == 0 }
@@ -49,6 +50,7 @@ struct GameView: View {
                 }
                 s.selected = open.last
             }
+            #endif
             session = s
         }
         .onReceive(timer) { _ in
@@ -96,21 +98,27 @@ struct GameView: View {
                             logHint("lesson", s)
                             showLesson = true
                         },
+                        onAutoCandidates: {
+                            s.wrappedValue.setAutoCandidates(true)
+                            changed(s.wrappedValue)
+                            startHint(s)   // re-diagnose now that every candidate is shown
+                        },
                         onClose: { self.diagnosis = nil; hintLevel = 0 })
                     .padding(.horizontal, 12)
             }
             ControlsView(session: s, settings: model.settings, onChange: { changed(s.wrappedValue) }, showCageHelper: $showCageHelper,
                          onHint: {
-                             // Each tap escalates: technique → digit → place → spotlight → lesson.
+                             // Each tap escalates: technique → digit → place → spotlight → lesson,
+                             // or for a mistake: what's wrong → which box → which cell.
                              if hintStep != nil {
                                  if hintLevel <= nudgeLevels { escalateHint(s) } else { logHint("lesson", s); showLesson = true }
                                  return
                              }
-                             let d = HintEngine.diagnose(s.wrappedValue)
-                             diagnosis = d
-                             hintLevel = 1
-                             loggedLevels = []
-                             if case .step = d { logHint("nudge", s) }
+                             if diagnosis?.isMistake == true && hintLevel < nudgeLevels {
+                                 escalateHint(s)
+                                 return
+                             }
+                             startHint(s)
                          })
                 .padding(.horizontal, 12)
                 .disabled(s.wrappedValue.isPaused)
@@ -162,9 +170,22 @@ struct GameView: View {
     }
 
     /// Next hint level: a more specific nudge, then the spotlight.
+    private func startHint(_ s: Binding<GameSession>) {
+        let d = HintEngine.diagnose(s.wrappedValue)
+        diagnosis = d
+        hintLevel = 1
+        loggedLevels = []
+        if case .step = d { logHint("nudge", s) }
+        if d.isMistake { logHint("nudge", s) }
+    }
+
     private func escalateHint(_ s: Binding<GameSession>) {
         hintLevel += 1
-        if hintLevel <= nudgeLevels {
+        if case .mistake(let cell, _) = diagnosis, hintLevel >= nudgeLevels {
+            // The exact cell is what Check would show, so it counts as a check.
+            s.wrappedValue.pointOutMistake(cell)
+            model.update(s.wrappedValue, for: key)
+        } else if hintLevel <= nudgeLevels {
             logHint("nudge\(hintLevel)", s, counting: "nudge")
         } else {
             logHint("spotlight", s)
