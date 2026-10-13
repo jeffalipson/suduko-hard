@@ -35,9 +35,6 @@ No accounts, no ads, no tracking. Works offline.
 
 Plays on iPhone and iPad, with full hardware keyboard support.
 
-## What's New in 1.1
-Now on iPad — a full-size board, side-by-side controls in landscape, split view and keyboard support.
-
 ## Keywords (100 max, comma-separated, no spaces after commas)
 sudoku,killer,hard,expert,puzzle,logic,number,brain,x-wing,chains,nightmare,diabolical,candidates
 
