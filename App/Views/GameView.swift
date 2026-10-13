@@ -7,6 +7,7 @@ struct GameView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var phase
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var session: GameSession?
     @State private var showCageHelper = false
     @State private var showCompletion = false
@@ -70,60 +71,35 @@ struct GameView: View {
 
     @ViewBuilder
     private func content(_ s: Binding<GameSession>) -> some View {
-        VStack(spacing: 16) {
-            ZStack {
-                BoardView(session: s.wrappedValue, settings: model.settings,
-                          spotlight: spotlightOn ? Set(hintStep?.patternCells ?? []) : [],
-                          pattern: spotlightOn ? (hintStep?.patternCandidates ?? []) : [],
-                          secondary: spotlightOn ? (hintStep?.groups.dropFirst(hintStep?.technique == .simpleColoring ? 1 : 0).flatMap { $0 } ?? []) : []) { cell in
-                    s.wrappedValue.selected = cell
-                }
-                .opacity(s.wrappedValue.isPaused ? 0 : 1)
-                if s.wrappedValue.isPaused {
-                    Button {
-                        s.wrappedValue.setPaused(false)
-                        model.update(s.wrappedValue, for: key)
-                    } label: {
-                        Label("Resume", systemImage: "play.fill").font(.title2)
+        GeometryReader { geo in
+            switch GameLayout.choose(width: geo.size.width, height: geo.size.height) {
+            case .stacked:
+                VStack(spacing: 16) {
+                    boardArea(s).padding(.horizontal, 8)
+                    VStack(spacing: 16) {
+                        hintBar(s)
+                        controls(s, .row)
                     }
-                    .accessibilityIdentifier("resumeButton")
-                }
-            }
-            .padding(.horizontal, 8)
-            if let diagnosis, !s.wrappedValue.isPaused {
-                HintBar(diagnosis: diagnosis, level: hintLevel, nudgeLevels: nudgeLevels,
-                        onMore: { escalateHint(s) },
-                        onSpotlight: { escalateHint(s) },
-                        onLesson: {
-                            logHint("lesson", s)
-                            showLesson = true
-                        },
-                        onAutoCandidates: {
-                            s.wrappedValue.setAutoCandidates(true)
-                            changed(s.wrappedValue)
-                            startHint(s)   // re-diagnose now that every candidate is shown
-                        },
-                        onClose: { self.diagnosis = nil; hintLevel = 0 })
                     .padding(.horizontal, 12)
+                    .frame(maxWidth: regular ? 560 : .infinity)
+                    Spacer(minLength: 0)
+                }
+                .frame(maxWidth: .infinity)
+            case .sideBySide(let board):
+                HStack(alignment: .top, spacing: 16) {
+                    boardArea(s).frame(width: board, height: board)
+                    VStack(spacing: 16) {
+                        controls(s, .column)
+                        hintBar(s)
+                        Spacer(minLength: 0)
+                    }
+                    .frame(width: GameLayout.columnWidth)
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
-            ControlsView(session: s, settings: model.settings, onChange: { changed(s.wrappedValue) }, showCageHelper: $showCageHelper,
-                         onHint: {
-                             // Each tap escalates: technique → digit → place → spotlight → lesson,
-                             // or for a mistake: what's wrong → which box → which cell.
-                             if hintStep != nil {
-                                 if hintLevel <= nudgeLevels { escalateHint(s) } else { logHint("lesson", s); showLesson = true }
-                                 return
-                             }
-                             if diagnosis?.isMistake == true && hintLevel < nudgeLevels {
-                                 escalateHint(s)
-                                 return
-                             }
-                             startHint(s)
-                         })
-                .padding(.horizontal, 12)
-                .disabled(s.wrappedValue.isPaused)
-            Spacer(minLength: 0)
         }
+        .regularWidthTypeBoost(regular)
         .navigationTitle("\(key.mode.rawValue.capitalized) · \(key.tier.name.capitalized)")
         .navigationBarTitleDisplayMode(.inline)
         // Only the back arrow leaves the game: an edge swipe is too easy to trigger from the left column.
@@ -173,6 +149,66 @@ struct GameView: View {
             }
             .interactiveDismissDisabled()
         }
+    }
+
+    private var regular: Bool { sizeClass == .regular }
+
+    @ViewBuilder private func boardArea(_ s: Binding<GameSession>) -> some View {
+        ZStack {
+            BoardView(session: s.wrappedValue, settings: model.settings,
+                      spotlight: spotlightOn ? Set(hintStep?.patternCells ?? []) : [],
+                      pattern: spotlightOn ? (hintStep?.patternCandidates ?? []) : [],
+                      secondary: spotlightOn ? (hintStep?.groups.dropFirst(hintStep?.technique == .simpleColoring ? 1 : 0).flatMap { $0 } ?? []) : []) { cell in
+                s.wrappedValue.selected = cell
+            }
+            .opacity(s.wrappedValue.isPaused ? 0 : 1)
+            if s.wrappedValue.isPaused {
+                Button {
+                    s.wrappedValue.setPaused(false)
+                    model.update(s.wrappedValue, for: key)
+                } label: {
+                    Label("Resume", systemImage: "play.fill").font(.title2)
+                }
+                .accessibilityIdentifier("resumeButton")
+            }
+        }
+    }
+
+    @ViewBuilder private func hintBar(_ s: Binding<GameSession>) -> some View {
+        if let diagnosis, !s.wrappedValue.isPaused {
+            HintBar(diagnosis: diagnosis, level: hintLevel, nudgeLevels: nudgeLevels,
+                    onMore: { escalateHint(s) },
+                    onSpotlight: { escalateHint(s) },
+                    onLesson: {
+                        logHint("lesson", s)
+                        showLesson = true
+                    },
+                    onAutoCandidates: {
+                        s.wrappedValue.setAutoCandidates(true)
+                        changed(s.wrappedValue)
+                        startHint(s)   // re-diagnose now that every candidate is shown
+                    },
+                    onClose: { self.diagnosis = nil; hintLevel = 0 })
+        }
+    }
+
+    private func controls(_ s: Binding<GameSession>, _ arrangement: ControlsArrangement) -> some View {
+        ControlsView(session: s, settings: model.settings, onChange: { changed(s.wrappedValue) }, showCageHelper: $showCageHelper,
+                     onHint: {
+                         // Each tap escalates: technique → digit → place → spotlight → lesson,
+                         // or for a mistake: what's wrong → which box → which cell.
+                         if hintStep != nil {
+                             if hintLevel <= nudgeLevels { escalateHint(s) } else { logHint("lesson", s); showLesson = true }
+                             return
+                         }
+                         if diagnosis?.isMistake == true && hintLevel < nudgeLevels {
+                             escalateHint(s)
+                             return
+                         }
+                         startHint(s)
+                     },
+                     arrangement: arrangement, scale: regular ? 1.3 : 1)
+            .disabled(s.wrappedValue.isPaused)
     }
 
     /// Next hint level: a more specific nudge, then the spotlight.
