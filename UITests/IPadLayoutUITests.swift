@@ -50,4 +50,29 @@ final class IPadLayoutUITests: XCTestCase {
         sleep(1)
         XCTAssertTrue(app.staticTexts["hintMessage"].exists)
     }
+
+    func testLandscapeHomeShowsAllTiers() throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "iPad only")
+        XCUIDevice.shared.orientation = .landscapeLeft
+        let app = XCUIApplication()
+        app.launchArguments = ["-uitest"]   // fresh state: no game in progress, so no Continue card
+        app.launch()
+        XCTAssertTrue(app.buttons["tier-easy"].waitForExistence(timeout: 10))
+        let window = app.windows.firstMatch.frame
+        XCTAssertTrue(app.buttons["tier-nightmare"].isHittable)
+        XCTAssertLessThanOrEqual(app.buttons["tier-nightmare"].frame.maxY, window.maxY)
+        XCTAssertGreaterThan(app.buttons["tier-easy"].frame.minX, window.midX - 40)   // ladder is in the right column
+    }
+
+    func testPortraitHomeIsCappedAndCentred() throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "iPad only")
+        let app = XCUIApplication()
+        app.launchArguments = ["-uitest"]
+        app.launch()
+        XCTAssertTrue(app.buttons["tier-easy"].waitForExistence(timeout: 10))
+        let row = app.buttons["tier-easy"].frame
+        let window = app.windows.firstMatch.frame
+        XCTAssertLessThanOrEqual(row.width, 700)
+        XCTAssertEqual(row.midX, window.midX, accuracy: 2)
+    }
 }
