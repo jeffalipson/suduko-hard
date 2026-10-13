@@ -18,19 +18,46 @@ struct HomeView: View {
     @State private var generating: QueueKey?
     @State private var generationTask: Task<Void, Never>?
     @State private var generationFailed = false
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 28) {
-                    topBar
-                    CagedWordmark()
-                    if let (key, game) = latestGame { ContinueCard(key: key, game: game) { playing = key } }
-                    ModeSwitch(mode: $mode)
-                    ladder
+            GeometryReader { geo in
+                let regular = sizeClass == .regular
+                let scale: CGFloat = regular ? 1.4 : 1
+                ScrollView {
+                    switch HomeLayout.choose(width: geo.size.width, height: geo.size.height) {
+                    case .twoColumns:
+                        HStack(alignment: .top, spacing: 48) {
+                            VStack(alignment: .leading, spacing: 28) {
+                                topBar
+                                CagedWordmark(scale: scale)
+                                if let (key, game) = latestGame { ContinueCard(key: key, game: game, scale: scale) { playing = key } }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            VStack(alignment: .leading, spacing: 28) {
+                                ModeSwitch(mode: $mode, scale: scale)
+                                ladder(scale: scale)
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                        .padding(.horizontal, 40)
+                        .padding(.vertical, 24)
+                    case .singleColumn:
+                        VStack(alignment: .leading, spacing: 28) {
+                            topBar
+                            CagedWordmark(scale: scale)
+                            if let (key, game) = latestGame { ContinueCard(key: key, game: game, scale: scale) { playing = key } }
+                            ModeSwitch(mode: $mode, scale: scale)
+                            ladder(scale: scale)
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 32)
+                        .frame(maxWidth: regular ? 700 : .infinity)
+                        .frame(maxWidth: .infinity)
+                    }
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 32)
+                .regularWidthTypeBoost(regular)
             }
             .background(HomePalette.paper.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
@@ -65,13 +92,15 @@ struct HomeView: View {
     // MARK: Sections
 
     private var topBar: some View {
-        HStack {
+        HStack(spacing: 24) {
+            // On iPad the window controls sit at the top-left of a windowed app, so both buttons go right.
+            if UIDevice.current.userInterfaceIdiom == .pad { Spacer() }
             Button { showStats = true } label: {
                 Image(systemName: "chart.bar.xaxis").font(.title3)
             }
             .accessibilityLabel("Stats")
             .accessibilityIdentifier("statsButton")
-            Spacer()
+            if UIDevice.current.userInterfaceIdiom != .pad { Spacer() }
             Button { showSettings = true } label: {
                 Image(systemName: "gearshape").font(.title3)
             }
@@ -82,12 +111,12 @@ struct HomeView: View {
         .padding(.top, 8)
     }
 
-    private var ladder: some View {
+    private func ladder(scale: CGFloat) -> some View {
         VStack(spacing: 0) {
             ForEach(Tier.allCases, id: \.self) { tier in
                 let key = QueueKey(mode: mode, tier: tier)
                 Button { open(key) } label: {
-                    TierRow(tier: tier, inProgress: model.resumable(key), best: bestTime(key))
+                    TierRow(tier: tier, inProgress: model.resumable(key), best: bestTime(key), scale: scale)
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("tier-\(tier.name)")
@@ -195,31 +224,33 @@ private extension UIColor {
 
 /// "really really Hard Sudoku" inside a dashed Killer cage, with 45 — every house's sum — as the cage total.
 private struct CagedWordmark: View {
+    var scale: CGFloat = 1
+
     var body: some View {
         VStack(alignment: .leading, spacing: -2) {
             Text("really really")
-                .font(.system(size: 17, weight: .semibold, design: .rounded))
+                .font(.system(size: 17 * scale, weight: .semibold, design: .rounded))
                 .foregroundStyle(HomePalette.muted)
             Text("Hard Sudoku")
-                .font(.system(size: 38, weight: .heavy, design: .rounded))
+                .font(.system(size: 38 * scale, weight: .heavy, design: .rounded))
                 .foregroundStyle(HomePalette.ink)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
         }
-        .padding(.horizontal, 18)
-        .padding(.top, 18)
-        .padding(.bottom, 12)
+        .padding(.horizontal, 18 * scale)
+        .padding(.top, 18 * scale)
+        .padding(.bottom, 12 * scale)
         .overlay {
             RoundedRectangle(cornerRadius: 22)
                 .strokeBorder(HomePalette.ink.opacity(0.55), style: StrokeStyle(lineWidth: 2, dash: [9, 7]))
         }
         .overlay(alignment: .topLeading) {
             Text("45")
-                .font(.system(size: 15, weight: .bold, design: .rounded))
+                .font(.system(size: 15 * scale, weight: .bold, design: .rounded))
                 .foregroundStyle(HomePalette.ink)
                 .padding(.horizontal, 6)
                 .background(HomePalette.paper)
-                .offset(x: 14, y: -10)
+                .offset(x: 14 * scale, y: -10 * scale)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Really Really Hard Sudoku")
@@ -232,13 +263,14 @@ private struct CagedWordmark: View {
 private struct ContinueCard: View {
     let key: QueueKey
     let game: GameSession
+    var scale: CGFloat = 1
     let onContinue: () -> Void
 
     var body: some View {
         Button(action: onContinue) {
             HStack(spacing: 16) {
                 BoardView(session: game, settings: GameSettings()) { _ in }
-                    .frame(width: 96, height: 96)
+                    .frame(width: 96 * scale, height: 96 * scale)
                     .clipShape(RoundedRectangle(cornerRadius: 6))
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)
@@ -257,10 +289,10 @@ private struct ContinueCard: View {
                 Image(systemName: "play.fill")
                     .font(.title3)
                     .foregroundStyle(.white)
-                    .frame(width: 44, height: 44)
+                    .frame(width: 44 * scale, height: 44 * scale)
                     .background(HomePalette.signal, in: Circle())
             }
-            .padding(14)
+            .padding(14 * scale)
             .background(HomePalette.cell, in: RoundedRectangle(cornerRadius: 20))
         }
         .buttonStyle(.plain)
@@ -279,6 +311,7 @@ private struct ContinueCard: View {
 
 private struct ModeSwitch: View {
     @Binding var mode: Mode
+    var scale: CGFloat = 1
 
     var body: some View {
         HStack(spacing: 10) {
@@ -294,12 +327,12 @@ private struct ModeSwitch: View {
             withAnimation(.snappy(duration: 0.2)) { mode = value }
         } label: {
             HStack(spacing: 10) {
-                glyph.frame(width: 22, height: 22)
+                glyph.frame(width: 22 * scale, height: 22 * scale)
                 Text(title).font(.system(.headline, design: .rounded))
             }
             .foregroundStyle(selected ? HomePalette.paper : HomePalette.ink)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
+            .padding(.vertical, 12 * scale)
             .background(selected ? HomePalette.ink : HomePalette.cell, in: RoundedRectangle(cornerRadius: 14))
         }
         .buttonStyle(.plain)
@@ -339,6 +372,7 @@ private struct TierRow: View {
     let tier: Tier
     let inProgress: GameSession?
     let best: Double?
+    var scale: CGFloat = 1
 
     var body: some View {
         HStack(alignment: .center, spacing: 14) {
@@ -347,11 +381,11 @@ private struct TierRow: View {
                 .foregroundStyle(HomePalette.ink)
             Spacer(minLength: 8)
             VStack(alignment: .trailing, spacing: 6) {
-                LevelPips(level: tier.rawValue + 1)
+                LevelPips(level: tier.rawValue + 1, scale: scale)
                 status
             }
         }
-        .padding(.vertical, 14)
+        .padding(.vertical, 14 * scale)
         .contentShape(Rectangle())
     }
 
@@ -373,13 +407,14 @@ private struct TierRow: View {
 /// Seven small cells, filled up to the tier's level.
 private struct LevelPips: View {
     let level: Int
+    var scale: CGFloat = 1
 
     var body: some View {
-        HStack(spacing: 3) {
+        HStack(spacing: 3 * scale) {
             ForEach(1...7, id: \.self) { i in
                 RoundedRectangle(cornerRadius: 2)
                     .fill(i <= level ? HomePalette.signal : HomePalette.cell)
-                    .frame(width: 9, height: 9)
+                    .frame(width: 9 * scale, height: 9 * scale)
             }
         }
         .accessibilityHidden(true)
