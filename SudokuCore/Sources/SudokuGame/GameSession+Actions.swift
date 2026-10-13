@@ -56,4 +56,13 @@ extension GameSession {
         guard !isPaused, !isComplete else { return }
         addElapsed(seconds)
     }
+
+    /// Arrow-key movement: one cell at a time, stopping at the board's edges.
+    /// With nothing selected, any move selects the top-left cell.
+    public mutating func moveSelection(rows: Int, columns: Int) {
+        guard let cell = selected else { selected = 0; return }
+        let r = min(8, max(0, cell / 9 + rows))
+        let c = min(8, max(0, cell % 9 + columns))
+        selected = r * 9 + c
+    }
 }
