@@ -1,0 +1,346 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Store panorama</title>
+<style>
+  @font-face { font-family: "Rounded"; src: url("file:///System/Library/Fonts/SFNSRounded.ttf"); font-weight: 100 1000; }
+
+  :root {
+    --night: #0A1230;
+    --ink: #13214A;
+    --indigo: #1E3478;
+    --paper: #F5F7FB;
+    --signal: #3D7BFF;
+    --pencil: #9AA6C8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: var(--night); overflow: hidden; }
+
+  #canvas {
+    position: relative;
+    overflow: hidden;
+    font-family: "Rounded", system-ui, sans-serif;
+    color: var(--paper);
+    background:
+      radial-gradient(ellipse at 18% 8%, rgba(61, 123, 255, 0.28), transparent 42%),
+      radial-gradient(ellipse at 62% 95%, rgba(61, 123, 255, 0.22), transparent 45%),
+      radial-gradient(ellipse at 95% 10%, rgba(120, 90, 255, 0.20), transparent 40%),
+      linear-gradient(90deg, #0A1230 0%, #13245F 30%, #0D1940 55%, #182C72 80%, #0A1230 100%);
+  }
+
+  svg.layer { position: absolute; inset: 0; pointer-events: none; }
+
+  .headline {
+    position: absolute;
+    font-weight: 860;
+    letter-spacing: -0.02em;
+    line-height: 1.02;
+    white-space: pre-line;
+  }
+  .sub {
+    position: absolute;
+    font-weight: 600;
+    color: var(--pencil);
+    line-height: 1.25;
+  }
+
+  .device {
+    position: absolute;
+    background: #04071A;
+    box-shadow: 0 80px 160px rgba(2, 5, 20, 0.55), 0 0 0 3px rgba(255, 255, 255, 0.08) inset;
+  }
+  .device img { display: block; }
+  .island {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #000;
+    border-radius: 999px;
+  }
+
+  .sum {
+    position: absolute;
+    font-weight: 800;
+    color: var(--paper);
+    background: var(--night);
+    padding: 0 0.28em;
+    line-height: 1;
+    opacity: 0.9;
+  }
+
+  .ladder { position: absolute; }
+  .pips { display: flex; }
+  .pips span { display: block; border-radius: 22%; }
+  .ladder .ends { display: flex; justify-content: space-between; color: var(--pencil); font-weight: 650; }
+
+  .hint {
+    position: absolute;
+    background: var(--paper);
+    color: var(--ink);
+    display: flex;
+    align-items: flex-start;
+    box-shadow: 0 50px 110px rgba(2, 5, 20, 0.5);
+  }
+  .hint .bulb { flex: none; border-radius: 50%; background: #FFD43B; }
+  .hint p { font-weight: 650; line-height: 1.25; }
+
+  .chip {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    font-weight: 700;
+    color: var(--paper);
+    background: rgba(10, 18, 48, 0.72);
+    border: 2px solid rgba(245, 247, 251, 0.18);
+    border-radius: 999px;
+    backdrop-filter: blur(8px);
+  }
+  .chip i { display: block; border-radius: 50%; }
+
+  .facts { position: absolute; list-style: none; font-weight: 700; }
+  .facts li { display: flex; align-items: center; }
+  .facts li::before { content: ""; display: block; flex: none; border: 0.09em dashed var(--pencil); border-radius: 0.14em; }
+</style>
+</head>
+<body>
+<div id="canvas"></div>
+<script>
+const device = new URLSearchParams(location.search).get("device") === "ipad" ? "ipad" : "iphone";
+const shots = device === "ipad" ? "../screenshots/ipad-13-inch/" : "../screenshots/";
+
+// Panel size is the App Store screenshot size; six panels make one continuous scene.
+const P = device === "ipad" ? { w: 2752, h: 2064 } : { w: 1320, h: 2868 };
+const N = 6;
+const canvas = document.getElementById("canvas");
+canvas.style.width = P.w * N + "px";
+canvas.style.height = P.h + "px";
+// ?panel=1…6 shifts the scene so a panel-sized window captures just that panel.
+const panelParam = Number(new URLSearchParams(location.search).get("panel") || 0);
+if (panelParam) canvas.style.marginLeft = (-(panelParam - 1) * P.w) + "px";
+
+const el = (tag, cls, parent = canvas) => { const e = document.createElement(tag); if (cls) e.className = cls; parent.appendChild(e); return e; };
+const px = v => v + "px";
+
+// Copy: one plain claim per panel.
+const panels = [
+  { h: "Sudoku that\ndoesn't stop\nat Hard", s: "Seven levels, from Easy all the way to Nightmare.", shot: "1-home.png" },
+  { h: "Every puzzle\nsolvable\nby logic", s: "One solution, no guessing, graded by the hardest step it needs.", shot: "2-classic-auto.png" },
+  { h: "Killer Sudoku,\njust as brutal", s: "Cages, sums and the same seven levels.", shot: "3-killer.png" },
+  { h: "Hints that\nteach, not tell", s: "First the technique, then the digit, then where to look.", shot: "5-lesson.png" },
+  { h: "See the logic,\nstep by step", s: "Chains and forcing moves play out link by link.", shot: "4-explain.png" },
+  { h: "No ads.\nNo accounts.\nNo noise.", s: "", shot: "6-home-dark.png" },
+];
+
+// Sizes scale with the panel so the iPad version keeps the same proportions.
+const k = device === "ipad" ? 1.0 : 1.0;
+const T = device === "ipad"
+  ? { head: 156, sub: 66, left: 170, top: 190, headW: 1500 }
+  : { head: 124, sub: 54, left: 104, top: 250, headW: 1110 };
+
+// Faint 9×9 grid spanning the whole scene, box lines heavier.
+(function grid() {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("class", "layer");
+  svg.setAttribute("width", P.w * N); svg.setAttribute("height", P.h);
+  const cell = device === "ipad" ? 344 : 330;
+  let d = "", heavy = "";
+  for (let i = 0, x = 0; x <= P.w * N; i++, x += cell) (i % 3 ? (d += `M${x} 0V${P.h}`) : (heavy += `M${x} 0V${P.h}`));
+  for (let i = 0, y = 0; y <= P.h; i++, y += cell) (i % 3 ? (d += `M0 ${y}H${P.w * N}`) : (heavy += `M0 ${y}H${P.w * N}`));
+  svg.innerHTML = `<path d="${d}" stroke="rgba(245,247,251,0.035)" stroke-width="2" fill="none"/>
+                   <path d="${heavy}" stroke="rgba(245,247,251,0.07)" stroke-width="4" fill="none"/>`;
+  canvas.appendChild(svg);
+})();
+
+// The one bold element: a single Killer cage outline that weaves through every panel.
+(function cage() {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("class", "layer");
+  svg.setAttribute("width", P.w * N); svg.setAttribute("height", P.h);
+  const y = f => Math.round(P.h * f), x = (panel, f) => Math.round(P.w * (panel + f));
+  const pts = device === "ipad"
+    ? [[x(0, -0.05), y(0.62)], [x(0, 0.025), y(0.62)], [x(0, 0.025), y(0.96)], [x(0.9, 0), y(0.96)], [x(0.9, 0), y(0.035)],
+       [x(1.025, 0), y(0.035)], [x(1.025, 0), y(0.6)], [x(1.12, 0), y(0.6)], [x(1.12, 0), y(0.95)], [x(2.025, 0), y(0.95)], [x(2.025, 0), y(0.035)],
+       [x(2.9, 0), y(0.035)], [x(2.9, 0), y(0.94)], [x(3.025, 0), y(0.94)], [x(3.025, 0), y(0.035)], [x(3.75, 0), y(0.035)], [x(3.75, 0), y(0.9)],
+       [x(4.025, 0), y(0.9)], [x(4.025, 0), y(0.035)], [x(4.9, 0), y(0.035)], [x(4.9, 0), y(0.93)], [x(5.025, 0), y(0.93)],
+       [x(5.025, 0), y(0.035)], [x(6.05, 0), y(0.035)]]
+    : [[x(0, -0.05), y(0.2)], [x(0, 0.05), y(0.2)], [x(0, 0.05), y(0.97)], [x(0.9, 0), y(0.97)], [x(0.9, 0), y(0.31)],
+       [x(1.5, 0), y(0.31)], [x(1.5, 0), y(0.95)], [x(2.04, 0), y(0.95)], [x(2.04, 0), y(0.05)], [x(2.96, 0), y(0.05)],
+       [x(2.96, 0), y(0.42)], [x(3.5, 0), y(0.42)], [x(3.5, 0), y(0.96)], [x(4.035, 0), y(0.96)], [x(4.035, 0), y(0.06)],
+       [x(4.94, 0), y(0.06)], [x(4.94, 0), y(0.94)], [x(5.55, 0), y(0.94)], [x(5.55, 0), y(0.32)], [x(6.05, 0), y(0.32)]];
+  const d = pts.map((p, i) => (i ? "L" : "M") + p[0] + " " + p[1]).join("");
+  const w = device === "ipad" ? 10 : 9;
+  svg.innerHTML = `<path d="${d}" stroke="rgba(245,247,251,0.34)" stroke-width="${w}" stroke-dasharray="${w * 3.2} ${w * 2.4}"
+                     stroke-linejoin="round" fill="none"/>`;
+  canvas.appendChild(svg);
+  // Cage totals sit on the outline's top-left corners, the way the app draws them.
+  const sums = ["45", "17", "23", "31", "9", "38"];
+  const corners = pts.filter((p, i) => i > 0 && i < pts.length - 1 && pts[i - 1][1] > p[1] && pts[i + 1][0] > p[0]);
+  corners.slice(0, sums.length).forEach((p, i) => {
+    const s = el("div", "sum");
+    s.textContent = sums[i];
+    const size = device === "ipad" ? 64 : 58;
+    s.style.fontSize = px(size);
+    s.style.left = px(p[0] + size * 0.3);
+    s.style.top = px(p[1] - size * 0.55);
+  });
+})();
+
+function frame({ src, cx, top, rot, screenW, portrait }) {
+  const isPad = device === "ipad";
+  const srcW = isPad ? (portrait ? 2064 : 2752) : 1320;
+  const srcH = isPad ? (portrait ? 2752 : 2064) : 2868;
+  const sw = screenW, sh = Math.round(screenW * srcH / srcW);
+  const bezel = Math.round(sw * (isPad ? 0.028 : 0.036));
+  const radius = isPad ? Math.round(sw * 0.045) : Math.round(sw * 0.16);
+  const d = el("div", "device");
+  d.style.width = px(sw + bezel * 2);
+  d.style.padding = px(bezel);
+  d.style.borderRadius = px(radius + bezel);
+  d.style.left = px(cx - (sw + bezel * 2) / 2);
+  d.style.top = px(top);
+  d.style.transform = `rotate(${rot}deg)`;
+  const img = el("img", "", d);
+  img.src = shots + src;
+  img.style.width = px(sw);
+  img.style.height = px(sh);
+  img.style.borderRadius = px(radius);
+  if (!isPad) {
+    const island = el("div", "island", d);
+    island.style.width = px(sw * 0.29);
+    island.style.height = px(sw * 0.085);
+    island.style.top = px(bezel + sw * 0.03);
+  }
+  return d;
+}
+
+// A sheet from the app, shown at reading size in front of its device (iPad only).
+function card(src, left, top, rot) {
+  const img = el("img", "device");
+  img.src = src;
+  img.style.width = px(1180);
+  img.style.left = px(left);
+  img.style.top = px(top);
+  img.style.borderRadius = px(64);
+  img.style.padding = "0";
+  img.style.transform = `rotate(${rot}deg)`;
+}
+
+// Headlines, subs and devices per panel.
+panels.forEach((p, i) => {
+  const x0 = P.w * i;
+  const h = el("div", "headline");
+  h.textContent = p.h;
+  h.style.fontSize = px(T.head);
+  h.style.left = px(x0 + T.left);
+  h.style.top = px(T.top);
+  h.style.width = px(T.headW);
+  const s = el("div", "sub");
+  s.textContent = p.s;
+  s.style.fontSize = px(T.sub);
+  s.style.left = px(x0 + T.left);
+  s.style.width = px(T.headW * 0.86);
+  // Sub sits below the headline; measured after layout.
+  p.subTop = () => T.top + h.offsetHeight + T.sub * 0.7;
+  p.belowSub = () => p.subTop() + (p.s ? s.offsetHeight + T.sub * 0.9 : 0);
+  s.style.top = px(p.subTop());
+});
+
+if (device === "iphone") {
+  const W = 900, top = 1180;
+  frame({ src: panels[0].shot, cx: P.w * 0.0 + 820, top, rot: -7, screenW: W });
+  frame({ src: panels[1].shot, cx: P.w * 1 + 900, top: top + 60, rot: 5, screenW: W });
+  frame({ src: panels[2].shot, cx: P.w * 2 + 720, top: top - 20, rot: -4, screenW: W });
+  frame({ src: panels[3].shot, cx: P.w * 3 + 730, top: top + 40, rot: 4, screenW: W });
+  frame({ src: panels[4].shot, cx: P.w * 4 + 860, top: top + 10, rot: -5, screenW: W });
+  frame({ src: panels[5].shot, cx: P.w * 5 + 720, top: top + 120, rot: 6, screenW: W });
+} else {
+  const top = 1000;
+  frame({ src: panels[0].shot, cx: P.w * 0 + 1760, top, rot: -5, screenW: 1900 });
+  frame({ src: panels[1].shot, cx: P.w * 1 + 1700, top: top + 30, rot: 4, screenW: 1900 });
+  frame({ src: panels[2].shot, cx: P.w * 2 + 1520, top: top - 10, rot: -3, screenW: 1900 });
+  frame({ src: panels[3].shot, cx: P.w * 3 + 2060, top: top - 40, rot: 4, screenW: 980, portrait: true });
+  card("assets/ipad-lesson-card.png", P.w * 3 + 230, 860, -3);
+  frame({ src: panels[4].shot, cx: P.w * 4 + 2060, top: top - 40, rot: -4, screenW: 980, portrait: true });
+  card("assets/ipad-explain-card.png", P.w * 4 + 230, 860, 3);
+  frame({ src: panels[5].shot, cx: P.w * 5 + 1700, top: top + 40, rot: 5, screenW: 1900 });
+}
+
+// Panel 1: the difficulty ladder, Easy to Nightmare, as the app draws it.
+(function ladder() {
+  const L = el("div", "ladder");
+  const pip = device === "ipad" ? 54 : 52, gap = pip * 0.36;
+  L.style.left = px(T.left);
+  L.style.top = px(panels[0].belowSub());
+  const row = el("div", "pips", L);
+  row.style.gap = px(gap);
+  for (let i = 1; i <= 7; i++) {
+    const b = el("span", "", row);
+    b.style.width = b.style.height = px(pip);
+    b.style.background = `color-mix(in srgb, var(--signal) ${40 + i * 8.5}%, #1B2650)`;
+  }
+  const ends = el("div", "ends", L);
+  ends.style.fontSize = px(pip * 0.72);
+  ends.style.marginTop = px(pip * 0.4);
+  ends.innerHTML = "<span>Easy</span><span>Nightmare</span>";
+})();
+
+// Panel 4: the hint bar as it appears in the game, leaning out of the phone.
+(function hint() {
+  const H = el("div", "hint");
+  const f = device === "ipad" ? 1.0 : 1.0;
+  const w = device === "ipad" ? 1180 : 980;
+  H.style.width = px(w);
+  H.style.left = px(P.w * 3 + (device === "ipad" ? 1280 : 170));
+  H.style.top = px(device === "ipad" ? 1620 : 2160);
+  H.style.padding = px(52 * f);
+  H.style.gap = px(36 * f);
+  H.style.borderRadius = px(56 * f);
+  H.style.transform = "rotate(-3deg)";
+  const bulb = el("span", "bulb", H);
+  bulb.style.width = bulb.style.height = px(58 * f);
+  bulb.style.marginTop = px(6);
+  const t = el("p", "", H);
+  t.style.fontSize = px(52 * f);
+  t.textContent = "X-Wing on 4s: rows 2 and 6 each have two spots, in the same two columns.";
+})();
+
+// Panel 5: the chain colours used in Explain step by step.
+(function chips() {
+  const sz = device === "ipad" ? 58 : 54;
+  [["true", "#2FB86B", 0], ["false", "#E5484D", 1]].forEach(([label, colour, n]) => {
+    const c = el("div", "chip");
+    c.style.fontSize = px(sz);
+    c.style.padding = `${px(sz * 0.42)} ${px(sz * 0.8)}`;
+    c.style.gap = px(sz * 0.45);
+    c.style.left = px(P.w * 4 + (device === "ipad" ? 1700 + n * 360 : 120 + n * 340));
+    c.style.top = px(device === "ipad" ? 1880 : panels[4].belowSub());
+    const dot = el("i", "", c);
+    dot.style.width = dot.style.height = px(sz * 0.6);
+    dot.style.background = colour;
+    c.append(label);
+  });
+})();
+
+// Panel 6: what's not in the app, each with a small cage box like the app's glyph.
+(function facts() {
+  const sz = device === "ipad" ? 60 : 56;
+  const ul = el("ul", "facts");
+  ul.style.fontSize = px(sz);
+  ul.style.left = px(P.w * 5 + T.left);
+  ul.style.top = px(panels[5].belowSub() + T.sub * 0.2);
+  ["No tracking", "Works offline", device === "ipad" ? "iPad and iPhone" : "iPhone and iPad"].forEach(t => {
+    const li = el("li", "", ul);
+    li.textContent = t;
+    li.style.gap = px(sz * 0.5);
+    li.style.marginBottom = px(sz * 0.45);
+  });
+  [...ul.children].forEach(li => { li.style.setProperty("--b", px(sz * 0.9)); });
+  const style = document.createElement("style");
+  style.textContent = `.facts li::before { width: ${px(sz * 0.9)}; height: ${px(sz * 0.9)}; }`;
+  document.head.appendChild(style);
+})();
+</script>
+</body>
+</html>
