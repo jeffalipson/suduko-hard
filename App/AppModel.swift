@@ -15,6 +15,11 @@ final class AppModel {
     private(set) var queues: PuzzleQueues
     private(set) var games: [String: GameSession]
     let library: PuzzleLibrary
+    /// Mathdoku: games in progress and ready puzzles by tier name, and the bundled library.
+    var mathGames: [String: MathdokuSession]
+    var mathQueues: [String: [MathdokuPuzzle]]
+    let mathLibrary: [Tier: [MathdokuPuzzle]]
+    var mathRefilling = false
     let container: ModelContainer = AppModel.makeContainer()
 
     /// UI tests run with `-uitest`: an in-memory stats store and a scratch state file.
@@ -57,6 +62,9 @@ final class AppModel {
         queues = state.queues
         games = state.games
         library = PuzzleLibrary.load(from: Bundle.main.resourceURL!)
+        mathGames = state.mathGames
+        mathQueues = state.mathQueues
+        mathLibrary = AppModel.loadMathLibrary()
         // Killer puzzles reshuffled by an older version could have cages split into pieces.
         let broken: (Puzzle) -> Bool = { $0.cages.contains { !$0.isConnected } }
         queues.purge(where: broken)
@@ -126,7 +134,7 @@ final class AppModel {
     }
 
     func save() {
-        Persistence.save(SavedState(settings: settings, queues: queues, games: games))
+        Persistence.save(SavedState(settings: settings, queues: queues, games: games, mathGames: mathGames, mathQueues: mathQueues))
     }
 
     /// Tops queues up with freshly generated puzzles (falling back to the library), generating off

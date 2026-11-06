@@ -4,8 +4,8 @@ import SudokuGame
 /// `.row`: today's layout (keys 1–5 over 6–9, one row of tools). `.column`: the side column (3×3 keys, tools in rows of three).
 enum ControlsArrangement { case row, column }
 
-struct ControlsView: View {
-    @Binding var session: GameSession
+struct ControlsView<S: PlayableSession>: View {
+    @Binding var session: S
     let settings: GameSettings
     let onChange: () -> Void
     @Binding var showCageHelper: Bool
@@ -35,64 +35,51 @@ struct ControlsView: View {
         }
     }
 
-    @ViewBuilder private var keypad: some View {
+    private var keypad: some View {
+        keyGrid(count: session.digitCount) { d, w, h in digitKey(d, width: w, height: h) }
+    }
+
+    /// Lays out keys 1…count: in a row arrangement, two rows (the top one takes the extra key, so
+    /// 9 keys are 5 over a centred 4); in a column arrangement, three per row like a calculator.
+    private func keyGrid<K: View>(count: Int, @ViewBuilder key: @escaping (Int, CGFloat, CGFloat) -> K) -> some View {
+        let spacing: CGFloat = 8
         switch arrangement {
         case .row:
-            // Two rows, 1–5 over a centred 6–9, so each key is wide enough to hit easily.
-            GeometryReader { geo in
-                let spacing: CGFloat = 8
-                let key = (geo.size.width - 4 * spacing) / 5
+            let top = (count + 1) / 2
+            return AnyView(GeometryReader { geo in
+                let w = (geo.size.width - CGFloat(top - 1) * spacing) / CGFloat(top)
                 VStack(spacing: spacing) {
-                    HStack(spacing: spacing) { ForEach(1...5, id: \.self) { digitKey($0, width: key, height: 52 * scale) } }
-                    HStack(spacing: spacing) { ForEach(6...9, id: \.self) { digitKey($0, width: key, height: 52 * scale) } }
+                    HStack(spacing: spacing) { ForEach(1...top, id: \.self) { key($0, w, 52 * scale) } }
+                    if count > top {
+                        HStack(spacing: spacing) { ForEach((top + 1)...count, id: \.self) { key($0, w, 52 * scale) } }
+                    }
                 }
                 .frame(maxWidth: .infinity)
             }
-            .frame(height: 2 * 52 * scale + 8)
+            .frame(height: 2 * 52 * scale + spacing))
         case .column:
-            // Calculator layout: 1 2 3 / 4 5 6 / 7 8 9.
-            GeometryReader { geo in
-                let spacing: CGFloat = 8
-                let key = (geo.size.width - 2 * spacing) / 3
+            let rows = (count + 2) / 3
+            return AnyView(GeometryReader { geo in
+                let w = (geo.size.width - 2 * spacing) / 3
                 VStack(spacing: spacing) {
-                    ForEach(0..<3, id: \.self) { row in
+                    ForEach(0..<rows, id: \.self) { row in
                         HStack(spacing: spacing) {
-                            ForEach(1...3, id: \.self) { col in digitKey(row * 3 + col, width: key, height: 72) }
+                            ForEach(1...3, id: \.self) { col in
+                                let d = row * 3 + col
+                                if d <= count { key(d, w, 72) } else { Color.clear.frame(width: w, height: 72) }
+                            }
                         }
                     }
                 }
             }
-            .frame(height: 3 * 72 + 2 * 8)
+            .frame(height: CGFloat(rows) * 72 + CGFloat(rows - 1) * spacing))
         }
     }
 
     /// Nine colours laid out like the keypad, then Clear and Clear all.
     @ViewBuilder private var palette: some View {
         VStack(spacing: 8) {
-            switch arrangement {
-            case .row:
-                GeometryReader { geo in
-                    let spacing: CGFloat = 8
-                    let key = (geo.size.width - 4 * spacing) / 5
-                    VStack(spacing: spacing) {
-                        HStack(spacing: spacing) { ForEach(1...5, id: \.self) { swatch($0, width: key, height: 52 * scale) } }
-                        HStack(spacing: spacing) { ForEach(6...9, id: \.self) { swatch($0, width: key, height: 52 * scale) } }
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-                .frame(height: 2 * 52 * scale + 8)
-            case .column:
-                GeometryReader { geo in
-                    let spacing: CGFloat = 8
-                    let key = (geo.size.width - 2 * spacing) / 3
-                    VStack(spacing: spacing) {
-                        ForEach(0..<3, id: \.self) { row in
-                            HStack(spacing: spacing) { ForEach(1...3, id: \.self) { col in swatch(row * 3 + col, width: key, height: 72) } }
-                        }
-                    }
-                }
-                .frame(height: 3 * 72 + 2 * 8)
-            }
+            keyGrid(count: GameSession.colorCount) { i, w, h in swatch(i, width: w, height: h) }
             HStack {
                 Button("Clear cell") {
                     if let cell = session.selected { session.setColor(0, at: cell); onChange() }
@@ -137,7 +124,7 @@ struct ControlsView: View {
         tool("Redo", "arrow.uturn.forward", id: "redo", enabled: session.canRedo) { session.redo() }
             .keyboardShortcut(shortcutsEnabled ? KeyboardShortcut("z", modifiers: [.command, .shift]) : nil)
         tool("Erase", "eraser", id: "erase") { session.erase() }
-        if settings.cageHelper && !session.puzzle.cages.isEmpty {
+        if settings.cageHelper && session.hasCageHelper {
             tool("Cage", "sum", id: "cageHelper", enabled: session.selected != nil) {
                 session.useCageHelper()
                 showCageHelper = true
@@ -157,7 +144,7 @@ struct ControlsView: View {
     }
 
     private func digitKey(_ d: Int, width: CGFloat, height: CGFloat) -> some View {
-        let done = session.placedCount(of: d) >= 9
+        let done = session.placedCount(of: d) >= session.digitCount
         return Button {
             session.input(d, settings: settings)
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
