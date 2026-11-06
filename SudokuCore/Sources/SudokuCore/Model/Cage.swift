@@ -24,3 +24,11 @@ public struct Cage: Hashable, Sendable, Codable {
         return seen.count == members.count
     }
 }
+
+extension Cage {
+    /// Digits that appear in at least one set of distinct digits of this cage's size adding up to
+    /// its sum: what the cage's total alone allows, before anything is placed.
+    public var possibleDigits: CandidateSet {
+        CageMath.combinations(sum: sum, count: cells.count).reduce(.empty) { $0.union($1) }
+    }
+}
