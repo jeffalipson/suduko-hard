@@ -35,6 +35,9 @@ No accounts, no ads, no tracking. Works offline.
 
 Plays on iPhone and iPad, with full hardware keyboard support.
 
+## What's New in 1.1
+Pencil marks in Killer Sudoku now sit in the same place and size in every cell, so they line up across the board and never hide under a cage total.
+
 ## Keywords (100 max, comma-separated, no spaces after commas)
 sudoku,killer,hard,expert,puzzle,logic,number,brain,x-wing,chains,nightmare,diabolical,candidates
 
@@ -45,7 +48,10 @@ Needs a page you control (a GitHub Pages site or any simple web page).
 - Privacy Nutrition Label: **Data Not Collected**
 - Privacy Policy URL: host `privacy-policy.md` (below) and paste the URL.
 
-## Screenshots (6.9", 1320×2868; 6.3" copies in `6.3-inch/`; 13" iPad in `ipad-13-inch/`)
+## Screenshots
+Store images (from 1.1): `screenshots/marketing/iphone-6.3/`, `marketing/iphone/` (6.9") and `marketing/ipad/` (13"), built by `marketing/render.sh`. Raw app captures: `screenshots/` (6.9"), `6.3-inch/`, `ipad-13-inch/`.
+
+### Raw captures (6.9", 1320×2868; 6.3" copies in `6.3-inch/`; 13" iPad in `ipad-13-inch/`)
 `docs/appstore/screenshots/` — 1-home, 2-classic-auto, 3-killer, 4-explain, 5-lesson, 6-home-dark.
 
 ## Review notes
