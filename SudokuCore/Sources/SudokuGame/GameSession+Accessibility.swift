@@ -14,6 +14,7 @@ extension GameSession {
                 parts.append("Candidates \(shown.digits.map(String.init).joined(separator: ", ")).")
             }
         }
+        if color(of: cell) != 0 { parts.append("Colour \(color(of: cell)).") }
         if let index = cageIndex(of: cell) {
             let cage = puzzle.cages[index]
             parts.append("Cage of \(cage.cells.count) cells, total \(cage.sum).")

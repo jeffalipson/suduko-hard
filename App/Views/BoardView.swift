@@ -70,6 +70,9 @@ struct BoardView: View {
                 if let fill { ctx.fill(Path(rect(c, unit)), with: .color(fill)) }
             }
         }
+        for c in 0..<81 where session.color(of: c) != 0 {
+            ctx.fill(Path(rect(c, unit)), with: .color(Theme.cellColors[session.color(of: c) - 1]))
+        }
         for c in session.flaggedWrong { ctx.fill(Path(rect(c, unit)), with: .color(Theme.wrongFill)) }
         for c in spotlight { ctx.fill(Path(rect(c, unit)), with: .color(Color.yellow.opacity(0.35))) }
 

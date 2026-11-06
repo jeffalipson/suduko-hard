@@ -45,6 +45,8 @@ public struct GameSession: Codable, Equatable, Sendable {
         let notes: [CandidateSet]
         /// Auto-candidate removals at the time (nil: leave them as they are).
         var removed: [CandidateSet]? = nil
+        /// Cell colours at the time (nil: leave them as they are).
+        var colors: [Int]? = nil
     }
 
     public let puzzle: Puzzle
@@ -64,6 +66,8 @@ public struct GameSession: Codable, Equatable, Sendable {
     var autoMode: Bool?
     /// Candidates the player removed by hand while in auto candidate mode (kept when toggling).
     var removedMarks: [CandidateSet]?
+    /// Background colour per cell (0 none, 1…colorCount), a solving aid. Optional so older saves load.
+    var cellColors: [Int]?
     var undoStack: [Snapshot] = []
     var redoStack: [Snapshot] = []
 
@@ -130,7 +134,7 @@ public struct GameSession: Codable, Equatable, Sendable {
 
     /// Saves the current state for undo and clears redo.
     mutating func record() {
-        undoStack.append(Snapshot(entries: entries, notes: notes, removed: removals))
+        undoStack.append(Snapshot(entries: entries, notes: notes, removed: removals, colors: cellColors ?? []))
         redoStack.removeAll()
     }
 
@@ -138,6 +142,7 @@ public struct GameSession: Codable, Equatable, Sendable {
         entries = s.entries
         notes = s.notes
         if let r = s.removed { removedMarks = r }
+        if let c = s.colors { cellColors = c }
         flaggedWrong = flaggedWrong.filter(isFlaggable)
     }
 

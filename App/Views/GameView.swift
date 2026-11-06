@@ -19,6 +19,8 @@ struct GameView: View {
     /// Hint levels already logged for the current diagnosis (each counted once).
     @State private var loggedLevels: Set<String> = []
     @FocusState private var boardFocused: Bool
+    @State private var colorMode = false
+    @State private var activeColor = 1
 
     /// How many nudge levels the current hint has; the spotlight comes after them.
     private var nudgeLevels: Int { diagnosis.map(HintText.levels(for:)) ?? 1 }
@@ -171,6 +173,10 @@ struct GameView: View {
                       pattern: spotlightOn ? (hintStep?.patternCandidates ?? []) : [],
                       secondary: spotlightOn ? (hintStep?.groups.dropFirst(hintStep?.technique == .simpleColoring ? 1 : 0).flatMap { $0 } ?? []) : []) { cell in
                 s.wrappedValue.selected = cell
+                if colorMode {
+                    s.wrappedValue.setColor(activeColor, at: cell)
+                    changed(s.wrappedValue)
+                }
             }
             .opacity(s.wrappedValue.isPaused ? 0 : 1)
             if s.wrappedValue.isPaused {
@@ -205,6 +211,7 @@ struct GameView: View {
 
     private func controls(_ s: Binding<GameSession>, _ arrangement: ControlsArrangement) -> some View {
         ControlsView(session: s, settings: model.settings, onChange: { changed(s.wrappedValue) }, showCageHelper: $showCageHelper,
+                     colorMode: $colorMode, activeColor: $activeColor,
                      onHint: {
                          // Each tap escalates: technique → digit → place → spotlight → lesson,
                          // or for a mistake: what's wrong → which box → which cell.
