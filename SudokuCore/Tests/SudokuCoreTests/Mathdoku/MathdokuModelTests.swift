@@ -65,3 +65,21 @@ import SudokuCore
         #expect(back == p)
     }
 }
+
+@Suite struct MathdokuTransformTests {
+    @Test(arguments: 0..<8)
+    func everySymmetryKeepsThePuzzleValid(k: Int) {
+        let p = MathdokuFixtures.hard11
+        let t = p.transformed(k)
+        #expect(t.n == p.n)
+        #expect(t.cages.allSatisfy { $0.satisfies($0.cells.map { t.solution[$0] }) })
+        #expect(MathdokuGrader.grade(t).solution == t.solution)
+        #expect(Set(t.cages.flatMap(\.cells)).count == t.cellCount)
+    }
+
+    @Test func identityAndRotationDiffer() {
+        let p = MathdokuFixtures.hard11
+        #expect(p.transformed(0) == p)
+        #expect(p.transformed(1).solution != p.solution)
+    }
+}

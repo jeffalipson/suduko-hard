@@ -48,3 +48,23 @@ public struct MathdokuPuzzle: Hashable, Codable, Sendable, Identifiable {
                    1, 2, 3, 4],
         tier: .easy, techniques: [.cageArithmetic])
 }
+
+extension MathdokuPuzzle {
+    /// One of the 8 rotations/reflections (0 = unchanged). The only reshuffles that keep every cage's
+    /// arithmetic: swapping rows or relabelling digits would break the clues.
+    public func transformed(_ k: Int) -> MathdokuPuzzle {
+        let k = ((k % 8) + 8) % 8
+        guard k != 0 else { return self }
+        let last = n - 1
+        func map(_ cell: Int) -> Int {
+            var r = cell / n, c = cell % n
+            if k >= 4 { c = last - c }                     // mirror first for 4…7
+            for _ in 0..<(k % 4) { (r, c) = (c, last - r) } // then rotate 90° k times
+            return r * n + c
+        }
+        var solution = Array(repeating: 0, count: cellCount)
+        for cell in 0..<cellCount { solution[map(cell)] = self.solution[cell] }
+        let cages = self.cages.map { MathCage(cells: $0.cells.map(map), op: $0.op, target: $0.target) }
+        return MathdokuPuzzle(id: id, n: n, cages: cages, solution: solution, tier: tier, techniques: techniques)
+    }
+}
