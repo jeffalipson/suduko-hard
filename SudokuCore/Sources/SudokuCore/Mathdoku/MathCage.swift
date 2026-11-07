@@ -104,3 +104,33 @@ public struct MathCage: Hashable, Codable, Sendable {
         return fillings(n: n, candidates: open).reduce(.empty) { $0.union(CandidateSet($1)) }
     }
 }
+
+extension MathCage {
+    /// The prime factorization of `n`, smallest prime first (empty for 1).
+    public static func primeFactors(_ n: Int) -> [(prime: Int, power: Int)] {
+        var out: [(prime: Int, power: Int)] = []
+        var n = n, p = 2
+        while n > 1 && p * p <= n {
+            var k = 0
+            while n % p == 0 { n /= p; k += 1 }
+            if k > 0 { out.append((p, k)) }
+            p += 1
+        }
+        if n > 1 { out.append((n, 1)) }
+        return out
+    }
+
+    /// "2³ · 3²" for 72; a prime or 1 is just itself.
+    public static func factorText(_ n: Int) -> String {
+        let factors = primeFactors(n)
+        guard !factors.isEmpty else { return "\(n)" }
+        let superscripts: [Character] = ["⁰", "¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "⁹"]
+        return factors.map { f in
+            f.power == 1 ? "\(f.prime)" : "\(f.prime)" + String(String(f.power).map { superscripts[Int(String($0))!] })
+        }.joined(separator: " · ")
+    }
+
+    /// Whether a long press shows this cage's prime factors: × cages, and every cage when operations
+    /// are hidden (so showing or not doesn't give the operation away).
+    public var showsFactors: Bool { op == .multiply || op == .hidden }
+}

@@ -12,7 +12,35 @@ struct MathdokuBoardView: View {
     var marks: [CellDigit] = []
     let onTap: (Int) -> Void
 
+    /// The cage whose prime factors are showing (after a long press), until the next tap.
+    @State private var factorCage: Int?
+    /// The current touch, for telling a long press from a tap or a drag.
+    @State private var pressStart: CGPoint?
+    @State private var pressID = 0
+
     private var n: Int { session.n }
+
+    private func cell(at p: CGPoint, side: CGFloat) -> Int {
+        let unit = side / CGFloat(n)
+        let r = min(n - 1, max(0, Int(p.y / unit)))
+        let c = min(n - 1, max(0, Int(p.x / unit)))
+        return r * n + c
+    }
+
+    /// Shows the prime factors of the cage under `cell`, if it's a × (or hidden) cage.
+    private func showFactors(of cell: Int) {
+        let index = session.puzzle.cageIndex[cell]
+        guard session.puzzle.cages[index].showsFactors else { return }
+        factorCage = index
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        UIAccessibility.post(notification: .announcement, argument: factorText(index))
+    }
+
+    private func factorText(_ index: Int) -> String {
+        let cage = session.puzzle.cages[index]
+        let head = cage.op == .hidden ? "\(cage.target)" : cage.label
+        return "\(head) = \(MathCage.factorText(cage.target))"
+    }
 
     var body: some View {
         GeometryReader { geo in
@@ -21,10 +49,27 @@ struct MathdokuBoardView: View {
                 .frame(width: size, height: size)
                 .contentShape(Rectangle())
                 .gesture(SpatialTapGesture().onEnded { tap in
-                    let cell = size / CGFloat(n)
-                    let r = min(n - 1, max(0, Int(tap.location.y / cell)))
-                    let c = min(n - 1, max(0, Int(tap.location.x / cell)))
-                    onTap(r * n + c)
+                    // While factors show, a tap only puts them away. (Lifting the finger after the long
+                    // press itself isn't a tap.)
+                    if factorCage != nil { factorCage = nil; return }
+                    onTap(cell(at: tap.location, side: size))
+                })
+                .simultaneousGesture(DragGesture(minimumDistance: 0).onChanged { drag in
+                    if pressStart == nil {
+                        pressStart = drag.startLocation
+                        pressID += 1
+                        let id = pressID, target = cell(at: drag.startLocation, side: size)
+                        Task { @MainActor in
+                            try? await Task.sleep(for: .milliseconds(450))
+                            if pressID == id, pressStart != nil { showFactors(of: target) }
+                        }
+                    } else if hypot(drag.translation.width, drag.translation.height) > 12 {
+                        pressStart = nil
+                        pressID += 1
+                    }
+                }.onEnded { _ in
+                    pressStart = nil
+                    pressID += 1
                 })
                 .accessibilityElement(children: .contain)
                 .accessibilityChildren {
@@ -38,14 +83,43 @@ struct MathdokuBoardView: View {
                                         .accessibilityLabel(session.spokenDescription(of: cell))
                                         .accessibilityAddTraits(session.selected == cell ? [.isButton, .isSelected] : .isButton)
                                         .accessibilityAction { onTap(cell) }
+                                        .accessibilityAction(named: "Prime factors") { showFactors(of: cell) }
                                 }
                             }
                         }
                     }
                 }
                 .accessibilityIdentifier("board")
+                // Outside the board's accessibility container, so the bubble is read on its own.
+                .overlay { factorBubble(side: size) }
         }
         .aspectRatio(1, contentMode: .fit)
+    }
+
+    /// "72× = 2³ · 3²", just above the cage's clue (below it on the top row). Cages on the right half
+    /// hang the bubble from the clue cell's right edge so it stays on the board.
+    @ViewBuilder private func factorBubble(side: CGFloat) -> some View {
+        if let index = factorCage, let anchor = session.puzzle.cages[index].cells.min() {
+            let unit = side / CGFloat(n)
+            let r = rect(anchor, unit)
+            let fontSize = max(15, unit * 0.32)
+            let height = fontSize * 1.25 + 12
+            let y = r.minY >= height + 4 ? r.minY - height - 4 : r.maxY + 4
+            let rightHalf = anchor % n >= n / 2
+            Text(factorText(index))
+                .font(.system(size: fontSize, weight: .semibold, design: .rounded))
+                .monospacedDigit()
+                .padding(.horizontal, 10)
+                .frame(height: height)
+                .background(.regularMaterial, in: Capsule())
+                .overlay(Capsule().strokeBorder(Theme.accent.opacity(0.6), lineWidth: 1))
+                .fixedSize()
+                .shadow(radius: 4, y: 2)
+                .accessibilityIdentifier("factorBubble")
+                .frame(width: side, height: side, alignment: rightHalf ? .topTrailing : .topLeading)
+                .offset(x: rightHalf ? -(side - r.maxX) : r.minX, y: y)
+                .allowsHitTesting(false)
+        }
     }
 
     private func rect(_ cell: Int, _ unit: CGFloat) -> CGRect {

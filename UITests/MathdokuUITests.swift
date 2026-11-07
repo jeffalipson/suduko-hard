@@ -68,3 +68,28 @@ final class MathdokuUITests: XCTestCase {
         XCTAssertTrue(app.buttons["tier-easy"].waitForExistence(timeout: 10))
     }
 }
+
+final class MathdokuFactorUITests: XCTestCase {
+    /// Holding a × cage shows its prime factors; the next tap puts them away without selecting anything.
+    func testLongPressShowsPrimeFactors() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uitest", "-open", "mathdoku-fiendish", "-new"]
+        app.launch()
+        let board = app.otherElements["board"].firstMatch
+        XCTAssertTrue(board.waitForExistence(timeout: 15))
+        // Find a cell in a × cage by its spoken description, and hold it.
+        let matches = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS '×,'"))
+        let cell = matches.element(boundBy: min(5, max(0, matches.count - 1)))
+        XCTAssertTrue(cell.waitForExistence(timeout: 5))
+        cell.press(forDuration: 0.9)
+        let bubble = app.staticTexts["factorBubble"]
+        XCTAssertTrue(bubble.waitForExistence(timeout: 3))
+        XCTAssertTrue(bubble.label.contains("="))
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "factor-bubble"
+        shot.lifetime = .keepAlways
+        add(shot)
+        board.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        XCTAssertFalse(bubble.waitForExistence(timeout: 1))
+    }
+}
