@@ -36,10 +36,21 @@ extension GameSession {
         removedMarks = r
     }
 
-    /// In auto candidate mode, the player removed this empty cell's answer by hand — a real error
-    /// that Check flags. (The player's own pencil marks are free-form and never count as wrong.)
+    /// In Auto Pencil mode, the player crossed out this empty cell's answer: a real error that Check
+    /// and hints point out. (Hand-made marks are free-form — partial or "Snyder" marks are common —
+    /// so they never count as wrong.)
     public func ruledOutAnswer(_ cell: Int) -> Bool {
         autoCandidateMode && entries[cell] == 0 && !displayedNotes(cell).contains(puzzle.solution[cell])
+    }
+
+    /// Un-crosses a cell's answer in Auto Pencil mode (undoable).
+    public mutating func restoreAnswerMark(_ cell: Int) {
+        guard ruledOutAnswer(cell) else { return }
+        record()
+        var r = removals
+        r[cell].remove(puzzle.solution[cell])
+        removedMarks = r
+        restore(Snapshot(entries: entries, notes: notes))   // re-filters flags
     }
 
     /// Something Check should flag: a wrong digit, or (auto mode) a removed answer.

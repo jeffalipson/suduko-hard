@@ -27,6 +27,9 @@ import SudokuGame
                 g.showMe(step)
             case .solved:
                 return
+            case .incompleteCage:
+                Issue.record("classic puzzles have no cages")
+                return
             case .mistake, .beyond:
                 Issue.record("unexpected diagnosis")
                 return

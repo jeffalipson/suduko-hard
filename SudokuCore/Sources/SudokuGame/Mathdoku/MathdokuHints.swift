@@ -144,7 +144,7 @@ public enum MathLessonText {
         case .hiddenSingle:
             "Every row and column needs each digit once. If a digit fits in only one cell of a row or column, it goes there, even if that cell has other candidates."
         case .cageArithmetic:
-            "List what can make the cage's clue. A two-cell 7+ in a 9×9 can be 1+6, 2+5 or 3+4, so 7, 8 and 9 can't go in it. A two-cell 12× can be 2×6, 3×4 or the reverse, never 1 or 5. Cells in the same row or column of a cage can't repeat a digit; cells that share neither can."
+            "List what can make the cage's clue. A two-cell 7+ in a 9×9 can be 1+6, 2+5 or 3+4, so 7, 8 and 9 can't go in it. A two-cell 12× can be 2×6, 3×4 or the reverse, never 1 or 5. Cells in the same row or column of a cage can't repeat a digit; cells that share neither can.\n\nFor a × cage, its prime factors tell you which digits it can use: 72× is 2³ · 3², so its digits are made of 2s and 3s (2, 3, 4, 6, 8, 9) and 5 and 7 are out. Touch and hold a × cage to see its prime factors."
         case .cageLineForced:
             "If every way to fill a cage puts a digit in the cage's part of one row or column, that digit can't appear anywhere else in that row or column."
         case .nakedPair:

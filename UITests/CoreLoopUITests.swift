@@ -137,3 +137,38 @@ final class AppearanceUITests: XCTestCase {
         add(shot)
     }
 }
+
+final class MistakeFixUITests: XCTestCase {
+    /// Auto Pencil on, the answer crossed out: the hint narrows to the cell, names the digit, and puts it back.
+    func testHintPutsACrossedOutAnswerBack() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-uitest", "-open", "classic-easy", "-new", "-auto"]
+        app.launch()
+        let board = app.otherElements["board"].firstMatch
+        XCTAssertTrue(board.waitForExistence(timeout: 15))
+        app.segmentedControls["inputMode"].buttons["Candidate"].tap()
+        // Cross out digits in an empty cell of row 1 until one of them is its answer.
+        let message = app.staticTexts["hintMessage"]
+        var found = false
+        outer: for col in 0..<9 {
+            board.coordinate(withNormalizedOffset: CGVector(dx: (Double(col) + 0.5) / 9, dy: 0.5 / 9)).tap()
+            for d in 1...9 {
+                app.buttons["digit-\(d)"].tap()
+                guard app.buttons["undo"].isEnabled else { continue outer }   // a given: nothing changed
+                app.buttons["hint"].tap()
+                if message.waitForExistence(timeout: 5), message.label.contains("crossed out") { found = true; break outer }
+                app.buttons["Close"].firstMatch.tap()
+            }
+        }
+        XCTAssertTrue(found)
+        app.buttons["hintMore"].tap()            // box
+        app.buttons["hintMore"].tap()            // cell
+        XCTAssertTrue(app.buttons["Which digit?"].waitForExistence(timeout: 5))
+        app.buttons["Which digit?"].tap()
+        XCTAssertTrue(message.label.contains("can still be"))
+        app.buttons["hintFix"].tap()
+        app.buttons["hint"].tap()
+        XCTAssertTrue(message.waitForExistence(timeout: 5))
+        XCTAssertFalse(message.label.contains("crossed out"))
+    }
+}
