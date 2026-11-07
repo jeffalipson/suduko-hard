@@ -57,7 +57,7 @@ public enum HintText {
     public static func nudge(_ step: Step, cages: [Cage] = []) -> String { nudge(step, level: nudgeLevels(step), cages: cages) }
 
     /// How many increasingly specific messages a diagnosis has. A wrong digit ends at its cell (erase
-    /// it); marks that leave out the answer go one further and name the missing digit.
+    /// it); a crossed-out answer goes one further and names the digit.
     public static func levels(for d: HintDiagnosis) -> Int {
         switch d {
         case .step(let step): return nudgeLevels(step)
@@ -71,7 +71,7 @@ public enum HintText {
     public static let mistakeCellLevel = 3
 
     /// The hint text at a given level (clamped to the diagnosis's levels). `answer` is the mistake
-    /// cell's answer, shown at the last level of a missing-mark mistake.
+    /// cell's answer, shown at the last level of a crossed-out-answer mistake.
     public static func message(_ d: HintDiagnosis, level: Int, cages: [Cage] = [], answer: Int? = nil) -> String {
         let level = max(1, min(level, levels(for: d)))
         switch d {
@@ -84,10 +84,8 @@ public enum HintText {
                 if level == 2 { text += " It's in box \(Geometry.box(c) + 1)." }
                 if level >= 3 { text += " It's \(cell(c))." }
                 return text
-            case .removedAnswer, .marksMissAnswer:
-                var text = kind == .removedAnswer
-                    ? "You crossed out a candidate that's the right digit."
-                    : "One cell's pencil marks leave out its answer."
+            case .removedAnswer:
+                var text = "You crossed out a candidate that's the right digit."
                 if level == 2 { text += " It's in box \(Geometry.box(c) + 1)." }
                 if level == 3 { text += " It's \(cell(c))." }
                 if level >= 4 {
@@ -96,9 +94,9 @@ public enum HintText {
                 return text
             }
         case .incomplete(let r):
-            return "The next step needs pencil marks in \(region(r)). Fill them in, or turn on Auto Pencil."
+            return "The next step needs every candidate pencilled in \(region(r)). Fill them in, or turn on Auto Pencil."
         case .incompleteCage(let c):
-            return "The next step needs pencil marks in \(cage(c)). Fill them in, or turn on Auto Pencil."
+            return "The next step needs every candidate pencilled in \(cage(c)). Fill them in, or turn on Auto Pencil."
         case .step(let s):
             return nudge(s, level: level, cages: cages)
         case .beyond:

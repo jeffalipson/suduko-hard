@@ -5,8 +5,6 @@ public enum MistakeKind: Equatable, Sendable {
     case wrongDigit
     /// In auto candidate mode, the player crossed out the cell's answer.
     case removedAnswer
-    /// The player's own pencil marks in a cell leave out its answer.
-    case marksMissAnswer
 }
 
 public enum HintDiagnosis: Equatable, Sendable {
@@ -33,10 +31,8 @@ public enum HintEngine {
     public static func diagnose(_ session: GameSession) -> HintDiagnosis {
         if session.isComplete { return .solved }
         for c in 0..<81 where session.entries[c] != 0 && session.isWrong(c) { return .mistake(cell: c, kind: .wrongDigit) }
-        // Only what Check can find counts as a mistake: wrong digits, and pencil marks that leave out the answer.
-        for c in 0..<81 where session.ruledOutAnswer(c) {
-            return .mistake(cell: c, kind: session.autoCandidateMode ? .removedAnswer : .marksMissAnswer)
-        }
+        // Only what Check can find counts as a mistake: wrong digits, and answers crossed out in Auto Pencil.
+        for c in 0..<81 where session.ruledOutAnswer(c) { return .mistake(cell: c, kind: .removedAnswer) }
         let shown = usableNotes(session)
         let board = playerBoard(session)
         let solver: LogicalSolver = session.puzzle.mode == .classic ? .classic : .killer
@@ -123,8 +119,9 @@ public enum HintEngine {
         return board
     }
 
-    /// The candidates the hint may build on. Marks that leave out a cell's answer are reported as a
-    /// mistake before any step, so this only guards against building a step on them.
+    /// The candidates the hint may build on. Hand-made marks are free-form (partial or "Snyder" marks
+    /// are common), so marks that leave out a cell's answer are set aside rather than treated as a
+    /// mistake; that cell then counts as un-pencilled, and a hint that needs it asks for every candidate.
     static func usableNotes(_ session: GameSession) -> [CandidateSet] {
         let shown = session.displayedNotes()
         guard !session.autoCandidateMode else { return shown }

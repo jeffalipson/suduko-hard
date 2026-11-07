@@ -58,7 +58,24 @@ import SudokuCore
         Issue.record("did not finish: \(recent.joined(separator: "\n"))")
     }
 
-    @Test func removingTheRightMarkByHandIsPointedOutAndCanBePutBack() throws {
+    @Test func crossingOutTheAnswerInAutoPencilIsPointedOutAndCanBePutBack() throws {
+        var rng = SplitMix64(seed: 7)
+        let puzzle = try #require(KillerGenerator().generate(tier: .hard, using: &rng))
+        var g = GameSession(puzzle: puzzle)
+        g.setAutoCandidates(true)
+        let c = try #require((0..<81).first { g.entries[$0] == 0 && g.displayedNotes($0).count > 2 })
+        g.inputMode = .candidate
+        g.selected = c
+        g.input(puzzle.solution[c], settings: settings)       // cross out the answer
+        let d = HintEngine.diagnose(g)
+        #expect(d == .mistake(cell: c, kind: .removedAnswer))
+        #expect(HintText.message(d, level: 4, answer: puzzle.solution[c]) == "\(HintText.cell(c)) can still be \(puzzle.solution[c]).")
+        g.restoreAnswerMark(c)
+        #expect(g.displayedNotes(c).contains(puzzle.solution[c]))
+        #expect(!HintEngine.diagnose(g).isMistake)
+    }
+
+    @Test func removingTheAnswerFromHandMadeMarksIsNotAMistake() throws {
         var rng = SplitMix64(seed: 7)
         let puzzle = try #require(KillerGenerator().generate(tier: .hard, using: &rng))
         var g = GameSession(puzzle: puzzle)
@@ -66,12 +83,9 @@ import SudokuCore
         let c = try #require((0..<81).first { g.entries[$0] == 0 && g.notes[$0].count > 2 })
         g.inputMode = .candidate
         g.selected = c
-        g.input(puzzle.solution[c], settings: settings)       // cross out the answer
-        let d = HintEngine.diagnose(g)
-        #expect(d == .mistake(cell: c, kind: .marksMissAnswer))
-        #expect(HintText.message(d, level: 4, answer: puzzle.solution[c]) == "\(HintText.cell(c)) can still be \(puzzle.solution[c]).")
-        g.restoreAnswerMark(c)
-        #expect(g.notes[c].contains(puzzle.solution[c]))
+        g.input(puzzle.solution[c], settings: settings)       // partial marks: allowed
         #expect(!HintEngine.diagnose(g).isMistake)
+        g.checkPuzzle()
+        #expect(g.flaggedWrong.isEmpty)
     }
 }

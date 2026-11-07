@@ -59,11 +59,11 @@ import SudokuGame
 
     @Test func incompleteCandidatesOfferAutoMode() {
         let d = HintDiagnosis.incomplete(.row(3))
-        #expect(HintText.message(d, level: 1) == "The next step needs pencil marks in row 4. Fill them in, or turn on Auto Pencil.")
+        #expect(HintText.message(d, level: 1) == "The next step needs every candidate pencilled in row 4. Fill them in, or turn on Auto Pencil.")
         #expect(HintText.offersAutoCandidates(d))
         #expect(!HintText.offersAutoCandidates(.solved))
         let cage = Cage(cells: [21, 12, 13], sum: 15)
-        #expect(HintText.message(.incompleteCage(cage)) == "The next step needs pencil marks in the 15 cage at r2c4. Fill them in, or turn on Auto Pencil.")
+        #expect(HintText.message(.incompleteCage(cage)) == "The next step needs every candidate pencilled in the 15 cage at r2c4. Fill them in, or turn on Auto Pencil.")
         #expect(HintText.offersAutoCandidates(.incompleteCage(cage)))
     }
 

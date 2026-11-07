@@ -36,31 +36,21 @@ extension GameSession {
         removedMarks = r
     }
 
-    /// The cell's pencil marks leave out its answer: in auto mode the player crossed it out, in manual
-    /// mode the marks they wrote don't include it. A real error that Check and hints point out.
-    /// (A cell with no marks at all is just un-pencilled.)
+    /// In Auto Pencil mode, the player crossed out this empty cell's answer: a real error that Check
+    /// and hints point out. (Hand-made marks are free-form — partial or "Snyder" marks are common —
+    /// so they never count as wrong.)
     public func ruledOutAnswer(_ cell: Int) -> Bool {
-        guard entries[cell] == 0 else { return false }
-        let shown = displayedNotes(cell)
-        return (autoCandidateMode || !shown.isEmpty) && !shown.contains(puzzle.solution[cell])
+        autoCandidateMode && entries[cell] == 0 && !displayedNotes(cell).contains(puzzle.solution[cell])
     }
 
-    /// Puts a cell's answer back among its pencil marks (undoable): un-crosses it in auto mode, or adds
-    /// it to the player's own marks.
+    /// Un-crosses a cell's answer in Auto Pencil mode (undoable).
     public mutating func restoreAnswerMark(_ cell: Int) {
         guard ruledOutAnswer(cell) else { return }
         record()
-        let answer = puzzle.solution[cell]
-        if autoCandidateMode {
-            var r = removals
-            r[cell].remove(answer)
-            removedMarks = r
-            restore(Snapshot(entries: entries, notes: notes))   // re-filters flags
-        } else {
-            var n = notes
-            n[cell].insert(answer)
-            restore(Snapshot(entries: entries, notes: n))
-        }
+        var r = removals
+        r[cell].remove(puzzle.solution[cell])
+        removedMarks = r
+        restore(Snapshot(entries: entries, notes: notes))   // re-filters flags
     }
 
     /// Something Check should flag: a wrong digit, or (auto mode) a removed answer.
