@@ -82,4 +82,22 @@ import SudokuGame
         let g = try JSONDecoder().decode(GameSession.self, from: JSONSerialization.data(withJSONObject: json))
         #expect(!g.autoCandidateMode)
     }
+
+    /// Auto Pencil leaves out digits a cage's total and size make impossible.
+    @Test func killerAutoModeDropsDigitsTheCageCannotHold() {
+        let cages = [Cage(cells: [0, 1], sum: 8), Cage(cells: [7, 8], sum: 3)]   // 5+3, 1+2
+        let p = Puzzle(id: "k2", mode: .killer, givens: Array(repeating: 0, count: 81), cages: cages,
+                       solution: wikiAnswer, grade: Grade(tier: .medium, score: 1), techniquesRequired: [])
+        var g = GameSession(puzzle: p)
+        g.setAutoCandidates(true)
+        for cell in [0, 1] {
+            #expect(!g.displayedNotes(cell).contains(4))   // 4+4 would repeat
+            #expect(!g.displayedNotes(cell).contains(8))
+            #expect(!g.displayedNotes(cell).contains(9))
+            #expect(g.displayedNotes(cell).contains(5))
+        }
+        #expect(g.displayedNotes(7).digits == [1, 2])
+        #expect(g.displayedNotes(9).digits.count == 9)      // not in a cage: untouched
+    }
 }
+

@@ -20,6 +20,19 @@ enum Theme {
     static let entry = adaptive((0.15, 0.38, 0.85), (0.50, 0.70, 1.0))
     static let note = Color.secondary
     static let cage = Color.primary.opacity(0.55)
+
+    /// Cell colours for colouring (index 1…9); soft enough to read digits over.
+    static let cellColors: [Color] = [
+        adaptive((1.00, 0.55, 0.55), (0.75, 0.25, 0.28), alpha: 0.55),   // red
+        adaptive((1.00, 0.70, 0.40), (0.78, 0.45, 0.15), alpha: 0.55),   // orange
+        adaptive((1.00, 0.88, 0.35), (0.72, 0.62, 0.12), alpha: 0.55),   // yellow
+        adaptive((0.55, 0.85, 0.50), (0.25, 0.58, 0.28), alpha: 0.55),   // green
+        adaptive((0.45, 0.85, 0.85), (0.15, 0.55, 0.58), alpha: 0.55),   // teal
+        adaptive((0.55, 0.72, 1.00), (0.22, 0.40, 0.80), alpha: 0.55),   // blue
+        adaptive((0.70, 0.60, 1.00), (0.42, 0.32, 0.80), alpha: 0.55),   // violet
+        adaptive((0.95, 0.60, 0.95), (0.65, 0.28, 0.65), alpha: 0.55),   // pink
+        adaptive((0.70, 0.70, 0.72), (0.45, 0.45, 0.50), alpha: 0.65),   // grey
+    ]
 }
 
 extension TechniqueID: @retroactive Identifiable {

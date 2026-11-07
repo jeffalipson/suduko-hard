@@ -9,6 +9,10 @@ struct ControlsView: View {
     let settings: GameSettings
     let onChange: () -> Void
     @Binding var showCageHelper: Bool
+    /// Colour mode: the keys become a palette and tapping cells paints them.
+    @Binding var colorMode: Bool
+    /// The colour cells are painted with (1…GameSession.colorCount).
+    @Binding var activeColor: Int
     let onHint: () -> Void
     var arrangement: ControlsArrangement = .row
     /// Size multiplier for keys and tools (1.3 in iPad-sized windows).
@@ -26,7 +30,7 @@ struct ControlsView: View {
                 .pickerStyle(.segmented)
                 .accessibilityIdentifier("inputMode")
             }
-            keypad
+            if colorMode { palette } else { keypad }
             tools
         }
     }
@@ -62,6 +66,64 @@ struct ControlsView: View {
         }
     }
 
+    /// Nine colours laid out like the keypad, then Clear and Clear all.
+    @ViewBuilder private var palette: some View {
+        VStack(spacing: 8) {
+            switch arrangement {
+            case .row:
+                GeometryReader { geo in
+                    let spacing: CGFloat = 8
+                    let key = (geo.size.width - 4 * spacing) / 5
+                    VStack(spacing: spacing) {
+                        HStack(spacing: spacing) { ForEach(1...5, id: \.self) { swatch($0, width: key, height: 52 * scale) } }
+                        HStack(spacing: spacing) { ForEach(6...9, id: \.self) { swatch($0, width: key, height: 52 * scale) } }
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .frame(height: 2 * 52 * scale + 8)
+            case .column:
+                GeometryReader { geo in
+                    let spacing: CGFloat = 8
+                    let key = (geo.size.width - 2 * spacing) / 3
+                    VStack(spacing: spacing) {
+                        ForEach(0..<3, id: \.self) { row in
+                            HStack(spacing: spacing) { ForEach(1...3, id: \.self) { col in swatch(row * 3 + col, width: key, height: 72) } }
+                        }
+                    }
+                }
+                .frame(height: 3 * 72 + 2 * 8)
+            }
+            HStack {
+                Button("Clear cell") {
+                    if let cell = session.selected { session.setColor(0, at: cell); onChange() }
+                }
+                .disabled(session.selected.map { session.color(of: $0) == 0 } ?? true)
+                .accessibilityIdentifier("clearColor")
+                Spacer()
+                Button("Clear all colors") { session.clearColors(); onChange() }
+                    .disabled(!session.hasColors)
+                    .accessibilityIdentifier("clearAllColors")
+            }
+            .font(.subheadline)
+        }
+    }
+
+    private func swatch(_ i: Int, width: CGFloat, height: CGFloat) -> some View {
+        let chosen = activeColor == i
+        return Button {
+            activeColor = i
+            if let cell = session.selected { session.setColor(i, at: cell); onChange() }
+        } label: {
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Theme.cellColors[i - 1])
+                .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.primary, lineWidth: chosen ? 3 : 0))
+                .frame(width: width, height: height)
+        }
+        .accessibilityLabel("Color \(i)")
+        .accessibilityAddTraits(chosen ? .isSelected : [])
+        .accessibilityIdentifier("color-\(i)")
+    }
+
     @ViewBuilder private var tools: some View {
         switch arrangement {
         case .row: HStack { toolButtons }
@@ -86,6 +148,11 @@ struct ControlsView: View {
         }
         .accessibilityLabel("Auto Pencil")
         .accessibilityValue(session.autoCandidateMode ? "on" : "off")
+        tool("Color", colorMode ? "paintpalette.fill" : "paintpalette", id: "colorMode", notify: false) {
+            colorMode.toggle()
+            if colorMode && activeColor == 0 { activeColor = 1 }
+        }
+        .accessibilityValue(colorMode ? "on" : "off")
         tool("Hint", "lightbulb", id: "hint", notify: false) { onHint() }
     }
 
@@ -113,7 +180,7 @@ struct ControlsView: View {
         } label: {
             VStack(spacing: 4) {
                 Image(systemName: icon).font(.title3)   // iPad sizes come from regularWidthTypeBoost
-                Text(title).font(.caption)
+                Text(title).font(.caption).lineLimit(1).minimumScaleFactor(0.7)
             }
             .frame(maxWidth: .infinity)
         }

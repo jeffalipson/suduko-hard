@@ -13,10 +13,16 @@ extension GameSession {
     }
 
     /// The candidates shown in every cell: in auto mode all possible candidates (from the digits on
-    /// the board) minus manual removals; otherwise the player's own notes. Filled cells show none.
+    /// the board and each cage's total) minus manual removals; otherwise the player's own notes.
+    /// Filled cells show none.
     public func displayedNotes() -> [CandidateSet] {
         guard autoCandidateMode else { return (0..<81).map { entries[$0] == 0 ? notes[$0] : .empty } }
-        let computed = Board(values: entries, cages: puzzle.cages).candidates
+        var computed = Board(values: entries, cages: puzzle.cages).candidates
+        // Killer: also drop digits the cage's total and size rule out (a 2-cell 7 can't hold 7, 8 or 9).
+        for cage in puzzle.cages {
+            let possible = cage.possibleDigits
+            for cell in cage.cells { computed[cell] = computed[cell].intersection(possible) }
+        }
         let r = removals
         return (0..<81).map { entries[$0] == 0 ? computed[$0].subtracting(r[$0]) : .empty }
     }
