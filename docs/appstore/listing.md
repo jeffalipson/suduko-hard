@@ -1,7 +1,7 @@
 # App Store listing (draft)
 
 **Name (30 max):** Really Really Hard Sudoku
-**Subtitle (30 max):** Classic & Killer to Nightmare
+**Subtitle (30 max):** Classic, Killer & Mathdoku
 **Category:** Games › Puzzle (secondary: Games › Board)
 **Age rating:** 4+
 **Price:** your call
@@ -13,7 +13,7 @@ Sudoku that keeps going after "Hard": seven tiers up to Nightmare, Classic and K
 ## Description
 If the hardest puzzle in your daily paper is a warm-up, this is for you.
 
-Every puzzle has exactly one solution and is solvable by logic — no guessing — and is graded by the hardest technique it actually needs. Seven tiers run from Easy to Nightmare in both Classic and Killer Sudoku.
+Every puzzle has exactly one solution and is solvable by logic — no guessing — and is graded by the hardest technique it actually needs. Seven tiers run from Easy to Nightmare in Classic Sudoku, Killer Sudoku and Mathdoku.
 
 HINTS THAT TEACH
 • Hints get more specific one step at a time: the technique, then the digit, then where to look
@@ -24,6 +24,7 @@ HINTS THAT TEACH
 PLAY YOUR WAY
 • Normal and candidate entry, unlimited undo and redo
 • Auto Pencil marks that remember the ones you cross out
+• Colour cells with 9 colours to track your reasoning
 • Killer cage helper and remaining sums (optional)
 • Check and reveal when you need them — tracked in your stats, never forced on you
 
