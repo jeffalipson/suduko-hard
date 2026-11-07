@@ -4,7 +4,12 @@ import SudokuGame
 
 /// Escalating hint: technique → digit → place → Show where (spotlight) → Lesson.
 struct HintBar: View {
-    let diagnosis: HintDiagnosis
+    let message: String
+    /// The hint is pointing at a mistake (shows More specific until the exact cell).
+    let isMistake: Bool
+    /// The hint is a solving step (shows More specific / Show where, and Lesson).
+    let isStep: Bool
+    let offersAutoPencil: Bool
     /// 1...nudgeLevels are nudges; above that the spotlight is on.
     let level: Int
     let nudgeLevels: Int
@@ -23,15 +28,15 @@ struct HintBar: View {
                 Spacer()
                 Button("Close", systemImage: "xmark", action: onClose).labelStyle(.iconOnly)
             }
-            if diagnosis.isMistake && level < nudgeLevels {
+            if isMistake && level < nudgeLevels {
                 Button("More specific", action: onMore).buttonStyle(.bordered).accessibilityIdentifier("hintMore")
             }
-            if HintText.offersAutoCandidates(diagnosis) {
+            if offersAutoPencil {
                 Button("Turn on Auto Pencil", action: onAutoCandidates)
                     .buttonStyle(.borderedProminent)
                     .accessibilityIdentifier("hintAutoCandidates")
             }
-            if case .step = diagnosis {
+            if isStep {
                 HStack {
                     if level < nudgeLevels {
                         Button("More specific", action: onMore).buttonStyle(.bordered).accessibilityIdentifier("hintMore")
@@ -48,5 +53,16 @@ struct HintBar: View {
         .accessibilityIdentifier("hintBar")
     }
 
-    private var message: String { HintText.message(diagnosis, level: level) }
+}
+
+extension HintBar {
+    /// A Sudoku hint.
+    init(diagnosis: HintDiagnosis, level: Int, nudgeLevels: Int, onMore: @escaping () -> Void, onSpotlight: @escaping () -> Void,
+         onLesson: @escaping () -> Void, onAutoCandidates: @escaping () -> Void, onClose: @escaping () -> Void) {
+        let isStep: Bool
+        if case .step = diagnosis { isStep = true } else { isStep = false }
+        self.init(message: HintText.message(diagnosis, level: level), isMistake: diagnosis.isMistake, isStep: isStep,
+                  offersAutoPencil: HintText.offersAutoCandidates(diagnosis), level: level, nudgeLevels: nudgeLevels,
+                  onMore: onMore, onSpotlight: onSpotlight, onLesson: onLesson, onAutoCandidates: onAutoCandidates, onClose: onClose)
+    }
 }

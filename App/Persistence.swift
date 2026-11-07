@@ -1,4 +1,5 @@
 import Foundation
+import SudokuCore
 import SudokuGame
 
 /// Everything the app keeps between launches, saved as one JSON file.
@@ -7,14 +8,20 @@ struct SavedState: Codable {
     var settings = GameSettings()
     var queues = PuzzleQueues()
     var games: [String: GameSession] = [:]
+    /// Mathdoku games in progress and ready puzzles, keyed by tier name.
+    var mathGames: [String: MathdokuSession] = [:]
+    var mathQueues: [String: [MathdokuPuzzle]] = [:]
 
-    init(settings: GameSettings = GameSettings(), queues: PuzzleQueues = PuzzleQueues(), games: [String: GameSession] = [:]) {
+    init(settings: GameSettings = GameSettings(), queues: PuzzleQueues = PuzzleQueues(), games: [String: GameSession] = [:],
+         mathGames: [String: MathdokuSession] = [:], mathQueues: [String: [MathdokuPuzzle]] = [:]) {
         self.settings = settings
         self.queues = queues
         self.games = games
+        self.mathGames = mathGames
+        self.mathQueues = mathQueues
     }
 
-    private enum CodingKeys: String, CodingKey { case version, settings, queues, games }
+    private enum CodingKeys: String, CodingKey { case version, settings, queues, games, mathGames, mathQueues }
 
     /// Each section decodes on its own (and each game separately), so one bad part never loses the rest.
     init(from decoder: any Decoder) throws {
@@ -24,6 +31,9 @@ struct SavedState: Codable {
         queues = (try? c.decode(PuzzleQueues.self, forKey: .queues)) ?? PuzzleQueues()
         let raw = (try? c.decode([String: Lenient<GameSession>].self, forKey: .games)) ?? [:]
         games = raw.compactMapValues(\.value)
+        let math = (try? c.decode([String: Lenient<MathdokuSession>].self, forKey: .mathGames)) ?? [:]
+        mathGames = math.compactMapValues(\.value)
+        mathQueues = (try? c.decode([String: [MathdokuPuzzle]].self, forKey: .mathQueues)) ?? [:]
     }
 }
 

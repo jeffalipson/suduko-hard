@@ -3,6 +3,7 @@ import SudokuCore
 
 struct Options {
     var mode = Mode.classic
+    var mathdoku = false
     var tier: Tier?
     var count = 10
     var out: String?
@@ -17,7 +18,7 @@ func log(_ message: String) {
 func usage() -> Never {
     log("""
     usage: sudoku-forge --tier easy|medium|hard|expert|fiendish|diabolical|nightmare --out FILE
-                        [--mode classic|killer] [--count N] [--seed N] [--timeout SECONDS]
+                        [--mode classic|killer|mathdoku] [--count N] [--seed N] [--timeout SECONDS]
     """)
     exit(2)
 }
@@ -30,6 +31,7 @@ func parse(_ args: [String]) -> Options {
         let value = args[i + 1]
         switch args[i] {
         case "--mode":
+            if value == "mathdoku" { o.mathdoku = true; break }
             guard let m = Mode(rawValue: value) else { usage() }
             o.mode = m
         case "--tier":
@@ -83,6 +85,26 @@ if (3...4).contains(CommandLine.arguments.count), CommandLine.arguments[1] == "-
 
 let options = parse(Array(CommandLine.arguments.dropFirst()))
 let tier = options.tier!
+
+if options.mathdoku {
+    let seed = options.seed ?? UInt64.random(in: .min ... .max)
+    log("seed \(seed)")
+    var rng = SplitMix64(seed: seed)
+    var puzzles: [MathdokuPuzzle] = []
+    while puzzles.count < options.count {
+        guard let p = MathdokuGenerator().generate(tier: tier, using: &rng, deadline: .now + .seconds(options.timeout)) else {
+            log("timed out after \(options.timeout)s on puzzle \(puzzles.count + 1); writing \(puzzles.count)")
+            break
+        }
+        puzzles.append(p)
+        log("[\(puzzles.count)/\(options.count)] \(p.n)×\(p.n) \(p.techniques.map(\.rawValue).joined(separator: ","))")
+    }
+    guard !puzzles.isEmpty else { log("no puzzles generated"); exit(3) }
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = [.sortedKeys]
+    try encoder.encode(puzzles).write(to: URL(fileURLWithPath: options.out!), options: .atomic)
+    exit(puzzles.count < options.count ? 3 : 0)
+}
 
 let maxTier = options.mode == .classic ? LogicalSolver.classic.maxTier : LogicalSolver.killer.maxTier
 guard tier <= maxTier else {

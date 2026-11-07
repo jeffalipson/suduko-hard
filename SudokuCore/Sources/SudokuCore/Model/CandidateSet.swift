@@ -51,3 +51,8 @@ extension CandidateSet: Codable {
         try c.encode(raw)
     }
 }
+
+extension CandidateSet {
+    /// The digits in `range`, e.g. `.range(1...6)` for a 6×6 Mathdoku.
+    public static func range(_ range: ClosedRange<Int>) -> CandidateSet { CandidateSet(range) }
+}
