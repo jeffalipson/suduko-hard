@@ -36,7 +36,15 @@ No accounts, no ads, no tracking. Works offline.
 Plays on iPhone and iPad, with full hardware keyboard support.
 
 ## What's New in 1.1
-Pencil marks in Killer Sudoku now sit in the same place and size in every cell, so they line up across the board and never hide under a cage total.
+New: Mathdoku. A third mode with arithmetic cages (+ − × ÷), from 5×5 Easy to 9×9 Nightmare with hidden operations. Every puzzle is solvable by logic, with hints and lessons for every technique. Hold a × cage to see its prime factors.
+
+Colour cells: pick from 9 colours to mark cells while you solve, in every mode.
+
+Smarter Auto Pencil: in Killer and Mathdoku it leaves out digits a cage can't hold.
+
+Better Killer hints: they name the cage, work with partly pencilled boards, and can put back a candidate you crossed out by mistake.
+
+Killer pencil marks now line up in every cell and never hide under a cage total.
 
 ## Keywords (100 max, comma-separated, no spaces after commas)
 sudoku,killer,hard,expert,puzzle,logic,number,brain,x-wing,chains,nightmare,diabolical,candidates
