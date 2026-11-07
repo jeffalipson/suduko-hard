@@ -7,16 +7,19 @@ import SudokuGame
 struct StatsView: View {
     @Query(sort: \GameRecord.endDate) private var stored: [GameRecord]
     @Environment(\.dismiss) private var dismiss
-    @State private var mode: Mode = .classic
+    @State private var picked: HomeMode = .classic
+    /// Mathdoku records are read with a stand-in Mode so the shared calculators work on them.
+    private var mode: Mode { picked == .killer ? .killer : .classic }
     @State private var chartTier: Tier = .hard
 
     var body: some View {
-        let records = stored.compactMap(\.data)   // decoded once per render
+        let records = picked == .mathdoku ? stored.compactMap { $0.mathdokuData(as: .classic) } : stored.compactMap(\.data)
         return NavigationStack {
             List {
-                Picker("Mode", selection: $mode) {
-                    Text("Classic").tag(Mode.classic)
-                    Text("Killer").tag(Mode.killer)
+                Picker("Mode", selection: $picked) {
+                    Text("Classic").tag(HomeMode.classic)
+                    Text("Killer").tag(HomeMode.killer)
+                    Text("Mathdoku").tag(HomeMode.mathdoku)
                 }
                 .pickerStyle(.segmented)
                 .listRowBackground(Color.clear)
@@ -63,11 +66,11 @@ struct StatsView: View {
                     }
                 }
 
-                Section("Techniques you've beaten") {
+                if picked != .mathdoku { Section("Techniques you've beaten") {
                     let t = StatsCalculator.techniques(records, mode: mode)
                     if t.isEmpty { Text("None yet.").foregroundStyle(.secondary) }
                     ForEach(t, id: \.technique) { stat($0.technique.displayName, "\($0.count)") }
-                }
+                } }
 
                 Section("Most abandoned") {
                     let rates = StatsCalculator.abandonRates(records, mode: mode).filter { $0.rate > 0 }

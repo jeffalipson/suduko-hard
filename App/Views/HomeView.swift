@@ -3,13 +3,23 @@ import SwiftUI
 import SudokuCore
 import SudokuGame
 
-/// Home: the caged wordmark, a Continue card for the game in progress, the Classic/Killer switch,
-/// and the difficulty ladder.
+/// Which ladder Home shows.
+enum HomeMode: Hashable { case classic, killer, mathdoku }
+
+/// What the Continue card resumes: a Sudoku queue or a Mathdoku tier.
+private enum ResumeTarget { case sudoku(QueueKey, GameSession), math(Tier, MathdokuSession)
+    var startedAt: Date { switch self { case .sudoku(_, let g): g.startedAt ?? .distantPast; case .math(_, let g): g.startedAt ?? .distantPast } }
+}
+
+/// Home: the caged wordmark, a Continue card for the game in progress, the Classic/Killer/Mathdoku
+/// switch, and the difficulty ladder.
 struct HomeView: View {
     @Environment(AppModel.self) private var model
     @Query private var records: [GameRecord]
-    @State private var mode: Mode = .classic
+    @State private var homeMode: HomeMode = .classic
     @State private var playing: QueueKey?
+    @State private var playingMath: Tier?
+    @State private var confirmNewMath: Tier?
     @State private var showSettings = false
     @State private var showStats = false
     @State private var debugLesson: TechniqueID?
@@ -32,11 +42,11 @@ struct HomeView: View {
                             VStack(alignment: .leading, spacing: 28) {
                                 topBar
                                 CagedWordmark(scale: scale)
-                                if let (key, game) = latestGame { ContinueCard(key: key, game: game, scale: scale) { playing = key } }
+                                if let latest = latestGame { continueCard(latest, scale: scale) }
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             VStack(alignment: .leading, spacing: 28) {
-                                ModeSwitch(mode: $mode, scale: scale)
+                                ModeSwitch(mode: $homeMode, scale: scale)
                                 ladder(scale: scale)
                             }
                             .frame(maxWidth: .infinity)
@@ -47,8 +57,8 @@ struct HomeView: View {
                         VStack(alignment: .leading, spacing: 28) {
                             topBar
                             CagedWordmark(scale: scale)
-                            if let (key, game) = latestGame { ContinueCard(key: key, game: game, scale: scale) { playing = key } }
-                            ModeSwitch(mode: $mode, scale: scale)
+                            if let latest = latestGame { continueCard(latest, scale: scale) }
+                            ModeSwitch(mode: $homeMode, scale: scale)
                             ladder(scale: scale)
                         }
                         .padding(.horizontal, 20)
@@ -78,6 +88,13 @@ struct HomeView: View {
                 }
             }
             .navigationDestination(item: $playing) { key in GameView(key: key) }
+            .navigationDestination(item: $playingMath) { tier in MathdokuGameView(tier: tier) }
+            .confirmationDialog("Start a new game?", isPresented: Binding(get: { confirmNewMath != nil }, set: { if !$0 { confirmNewMath = nil } }),
+                                titleVisibility: .visible, presenting: confirmNewMath) { tier in
+                Button("New Game", role: .destructive) { startNewMath(tier) }
+            } message: { _ in
+                Text("Your game in progress will count as abandoned in your stats.")
+            }
             .onAppear(perform: openFromLaunchArguments)
             .alert("Couldn't make a puzzle in time", isPresented: $generationFailed) {
                 Button("OK", role: .cancel) {}
@@ -111,12 +128,38 @@ struct HomeView: View {
         .padding(.top, 8)
     }
 
-    private func ladder(scale: CGFloat) -> some View {
+    private var sudokuMode: Mode { homeMode == .killer ? .killer : .classic }
+
+    @ViewBuilder private func ladder(scale: CGFloat) -> some View {
+        if homeMode == .mathdoku { mathLadder(scale: scale) } else { sudokuLadder(scale: scale) }
+    }
+
+    private func mathLadder(scale: CGFloat) -> some View {
         VStack(spacing: 0) {
             ForEach(Tier.allCases, id: \.self) { tier in
-                let key = QueueKey(mode: mode, tier: tier)
+                let game = model.resumableMath(tier)
+                Button { openMath(tier) } label: {
+                    TierRow(tier: tier, detail: "\(MathdokuGenerator.config(tier).n)×\(MathdokuGenerator.config(tier).n)",
+                            inProgress: game?.elapsed, best: bestMathTime(tier), scale: scale)
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("tier-\(tier.name)")
+                .contextMenu {
+                    if game != nil {
+                        Button("New Game", systemImage: "arrow.counterclockwise") { confirmNewMath = tier }
+                    }
+                }
+                if tier != .nightmare { Divider().overlay(HomePalette.cell) }
+            }
+        }
+    }
+
+    private func sudokuLadder(scale: CGFloat) -> some View {
+        VStack(spacing: 0) {
+            ForEach(Tier.allCases, id: \.self) { tier in
+                let key = QueueKey(mode: sudokuMode, tier: tier)
                 Button { open(key) } label: {
-                    TierRow(tier: tier, inProgress: model.resumable(key), best: bestTime(key), scale: scale)
+                    TierRow(tier: tier, inProgress: model.resumable(key)?.elapsed, best: bestTime(key), scale: scale)
                 }
                 .buttonStyle(.plain)
                 .accessibilityIdentifier("tier-\(tier.name)")
@@ -146,10 +189,27 @@ struct HomeView: View {
 
     // MARK: Data
 
-    /// The game in progress started most recently.
-    private var latestGame: (QueueKey, GameSession)? {
-        QueueKey.all.compactMap { key in model.resumable(key).map { (key, $0) } }
-            .max { ($0.1.startedAt ?? .distantPast) < ($1.1.startedAt ?? .distantPast) }
+    /// The game in progress started most recently, Sudoku or Mathdoku.
+    private var latestGame: ResumeTarget? {
+        let sudoku = QueueKey.all.compactMap { key in model.resumable(key).map { ResumeTarget.sudoku(key, $0) } }
+        let math = Tier.allCases.compactMap { t in model.resumableMath(t).map { ResumeTarget.math(t, $0) } }
+        return (sudoku + math).max { $0.startedAt < $1.startedAt }
+    }
+
+    @ViewBuilder private func continueCard(_ target: ResumeTarget, scale: CGFloat) -> some View {
+        switch target {
+        case .sudoku(let key, let game):
+            ContinueCard(title: "\(key.mode.rawValue.capitalized) \(key.tier.name.capitalized)", elapsed: game.elapsed,
+                         filled: game.filledPercent, scale: scale,
+                         preview: AnyView(BoardView(session: game, settings: GameSettings()) { _ in })) { playing = key }
+        case .math(let tier, let game):
+            ContinueCard(title: "Mathdoku \(tier.name.capitalized)", elapsed: game.elapsed, filled: game.filledPercent, scale: scale,
+                         preview: AnyView(MathdokuBoardView(session: game, settings: GameSettings()) { _ in })) { playingMath = tier }
+        }
+    }
+
+    private func bestMathTime(_ tier: Tier) -> Double? {
+        records.filter { $0.won && $0.mode == "mathdoku" && $0.tier == tier.rawValue }.map(\.elapsed).min()
     }
 
     private func bestTime(_ key: QueueKey) -> Double? {
@@ -165,10 +225,16 @@ struct HomeView: View {
         if args.contains("-stats") { showStats = true }
         if let i = args.firstIndex(of: "-lesson"), i + 1 < args.count { debugLesson = TechniqueID(rawValue: args[i + 1]) }
         if let i = args.firstIndex(of: "-explain"), i + 1 < args.count { debugExplain = TechniqueID(rawValue: args[i + 1]) }
-        if args.contains("-killer") { mode = .killer }
-        guard let i = args.firstIndex(of: "-open"), i + 1 < args.count,
-              let key = QueueKey.all.first(where: { $0.name == args[i + 1] }) else { return }
-        mode = key.mode
+        if args.contains("-killer") { homeMode = .killer }
+        if args.contains("-mathdoku") { homeMode = .mathdoku }
+        guard let i = args.firstIndex(of: "-open"), i + 1 < args.count else { return }
+        if args[i + 1].hasPrefix("mathdoku-"), let tier = Tier.allCases.first(where: { "mathdoku-\($0.name)" == args[i + 1] }) {
+            homeMode = .mathdoku
+            if args.contains("-new") { startNewMath(tier) } else { openMath(tier) }
+            return
+        }
+        guard let key = QueueKey.all.first(where: { $0.name == args[i + 1] }) else { return }
+        homeMode = key.mode == .killer ? .killer : .classic
         if args.contains("-new") { startNew(key) } else { open(key) }
         #endif
     }
@@ -190,6 +256,16 @@ struct HomeView: View {
             generating = nil
             if ok { playing = key } else { generationFailed = true }
         }
+    }
+
+    private func openMath(_ tier: Tier) {
+        if model.resumableMath(tier) == nil, model.startNewMath(tier) == nil { generationFailed = true; return }
+        playingMath = tier
+    }
+
+    private func startNewMath(_ tier: Tier) {
+        guard model.startNewMath(tier) != nil else { generationFailed = true; return }
+        playingMath = tier
     }
 
     private func startNew(_ key: QueueKey) {
@@ -261,25 +337,27 @@ private struct CagedWordmark: View {
 // MARK: - Continue
 
 private struct ContinueCard: View {
-    let key: QueueKey
-    let game: GameSession
+    let title: String
+    let elapsed: Double
+    let filled: Int
     var scale: CGFloat = 1
+    let preview: AnyView
     let onContinue: () -> Void
 
     var body: some View {
         Button(action: onContinue) {
             HStack(spacing: 16) {
-                BoardView(session: game, settings: GameSettings()) { _ in }
+                preview
                     .frame(width: 96 * scale, height: 96 * scale)
                     .clipShape(RoundedRectangle(cornerRadius: 6))
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Continue").font(.subheadline.weight(.semibold)).foregroundStyle(HomePalette.signal)
-                    Text("\(key.mode.rawValue.capitalized) \(key.tier.name.capitalized)")
+                    Text(title)
                         .font(.system(.title3, design: .rounded).weight(.bold))
                         .foregroundStyle(HomePalette.ink)
-                    Text("\(GameView.clock(game.elapsed)) played, \(filledPercent)% filled")
+                    Text("\(GameView.clock(elapsed)) played, \(filled)% filled")
                         .font(.subheadline.monospacedDigit())
                         .foregroundStyle(HomePalette.muted)
                         .lineLimit(1)
@@ -298,38 +376,49 @@ private struct ContinueCard: View {
         .buttonStyle(.plain)
         .accessibilityIdentifier("continueCard")
     }
+}
 
-    private var filledPercent: Int {
-        let open = game.puzzle.givens.filter { $0 == 0 }.count
-        guard open > 0 else { return 100 }
-        let filled = (0..<81).filter { game.puzzle.givens[$0] == 0 && game.entries[$0] != 0 }.count
-        return Int((Double(filled) / Double(open) * 100).rounded())
+private extension GameSession {
+    var filledPercent: Int {
+        let open = (0..<81).filter { puzzle.givens[$0] == 0 }
+        guard !open.isEmpty else { return 100 }
+        return Int((Double(open.filter { entries[$0] != 0 }.count) / Double(open.count) * 100).rounded())
+    }
+}
+
+private extension MathdokuSession {
+    var filledPercent: Int {
+        let open = (0..<cellCount).filter { !isGiven($0) }
+        guard !open.isEmpty else { return 100 }
+        return Int((Double(open.filter { entries[$0] != 0 }.count) / Double(open.count) * 100).rounded())
     }
 }
 
 // MARK: - Mode switch
 
 private struct ModeSwitch: View {
-    @Binding var mode: Mode
+    @Binding var mode: HomeMode
     var scale: CGFloat = 1
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             option(.classic, "Classic", glyph: AnyView(GridGlyph()))
-            option(.killer, "Killer", glyph: AnyView(CageGlyph()))
+            option(.killer, "Killer", glyph: AnyView(CageGlyph(label: "9")))
+            option(.mathdoku, "Mathdoku", glyph: AnyView(CageGlyph(label: "×")))
         }
         .accessibilityIdentifier("modePicker")
     }
 
-    private func option(_ value: Mode, _ title: String, glyph: AnyView) -> some View {
+    private func option(_ value: HomeMode, _ title: String, glyph: AnyView) -> some View {
         let selected = mode == value
         return Button {
             withAnimation(.snappy(duration: 0.2)) { mode = value }
         } label: {
-            HStack(spacing: 10) {
-                glyph.frame(width: 22 * scale, height: 22 * scale)
-                Text(title).font(.system(.headline, design: .rounded))
+            HStack(spacing: 8) {
+                glyph.frame(width: 20 * scale, height: 20 * scale)
+                Text(title).font(.system(.headline, design: .rounded)).lineLimit(1).minimumScaleFactor(0.7)
             }
+            .padding(.horizontal, 6)
             .foregroundStyle(selected ? HomePalette.paper : HomePalette.ink)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12 * scale)
@@ -358,10 +447,11 @@ private struct GridGlyph: View {
 
 /// A dashed cage with a tiny sum.
 private struct CageGlyph: View {
+    var label = "9"
     var body: some View {
         ZStack(alignment: .topLeading) {
             RoundedRectangle(cornerRadius: 4).strokeBorder(style: StrokeStyle(lineWidth: 1.4, dash: [3, 2.5]))
-            Text("9").font(.system(size: 8, weight: .bold, design: .rounded)).padding(.leading, 3).padding(.top, 1)
+            Text(label).font(.system(size: 8, weight: .bold, design: .rounded)).padding(.leading, 3).padding(.top, 1)
         }
     }
 }
@@ -370,7 +460,8 @@ private struct CageGlyph: View {
 
 private struct TierRow: View {
     let tier: Tier
-    let inProgress: GameSession?
+    var detail: String? = nil
+    let inProgress: Double?
     let best: Double?
     var scale: CGFloat = 1
 
@@ -379,6 +470,9 @@ private struct TierRow: View {
             Text(tier.name.capitalized)
                 .font(.system(.title3, design: .rounded).weight(.bold))
                 .foregroundStyle(HomePalette.ink)
+            if let detail {
+                Text(detail).font(.subheadline.monospacedDigit()).foregroundStyle(HomePalette.muted)
+            }
             Spacer(minLength: 8)
             VStack(alignment: .trailing, spacing: 6) {
                 LevelPips(level: tier.rawValue + 1, scale: scale)
@@ -390,8 +484,8 @@ private struct TierRow: View {
     }
 
     @ViewBuilder private var status: some View {
-        if let game = inProgress {
-            Text("In progress \(GameView.clock(game.elapsed))")
+        if let elapsed = inProgress {
+            Text("In progress \(GameView.clock(elapsed))")
                 .font(.caption.weight(.semibold).monospacedDigit())
                 .foregroundStyle(HomePalette.signal)
         } else if let best {

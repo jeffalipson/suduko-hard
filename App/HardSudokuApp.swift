@@ -19,10 +19,11 @@ struct HardSudokuApp: App {
                 .preferredColorScheme(model.settings.appearance.colorScheme)
                 .modelContainer(model.container)
                 .task { await model.refillLoop() }
+                .task { await model.refillMath() }
         }
         .onChange(of: phase) { _, new in
             if new == .background { model.save(); model.scheduleBackgroundRefill() }
-            if new == .active { Task { await model.refillLoop() } }
+            if new == .active { Task { await model.refillLoop() }; Task { await model.refillMath() } }
         }
     }
 }

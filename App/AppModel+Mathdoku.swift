@@ -55,7 +55,7 @@ extension AppModel {
 
     /// Tops each tier's queue up with puzzles generated on the device (a few seconds each, off the main actor).
     func refillMath() async {
-        guard !mathRefilling else { return }
+        guard !mathRefilling, !AppModel.isUITest else { return }
         mathRefilling = true
         defer { mathRefilling = false }
         for tier in Tier.allCases {
