@@ -5,17 +5,26 @@ import SudokuGame
 @Suite struct MistakeConsistencyTests {
     let s = GameSettings()
 
-    @Test func partialPencilMarksAreNotMistakes() {
-        // Snyder-style marks: a lone candidate that isn't the cell's answer.
+    @Test func pencilMarksMissingTheAnswerAreFlaggedByHintAndCheckAlike() {
         var g = GameSession(puzzle: classicPuzzle())
         g.selected = 2            // answer 4
         g.inputMode = .candidate
         g.input(1, settings: s)
-        #expect(!HintEngine.diagnose(g).isMistake)
+        #expect(HintEngine.diagnose(g) == .mistake(cell: 2, kind: .marksMissAnswer))
         g.checkPuzzle()
+        #expect(g.flaggedWrong == [2])
+        // Putting the answer back clears both.
+        g.restoreAnswerMark(2)
+        #expect(g.notes[2] == CandidateSet([1, 4]))
         #expect(g.flaggedWrong.isEmpty)
-        // The ignored marks don't feed the hint: cell 2 keeps its real candidates.
-        #expect(HintEngine.playerBoard(g).candidates[2].contains(4))
+        #expect(!HintEngine.diagnose(g).isMistake)
+        g.undo()
+        #expect(g.notes[2] == CandidateSet([1]))
+    }
+
+    @Test func emptyCellsAreNotMistakes() {
+        let g = GameSession(puzzle: classicPuzzle())
+        #expect(!HintEngine.diagnose(g).isMistake)
     }
 
     @Test func removingTheAnswerInAutoModeIsAMistakeThatCheckFinds() {

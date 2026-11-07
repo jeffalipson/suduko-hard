@@ -194,6 +194,7 @@ struct GameView: View {
     @ViewBuilder private func hintBar(_ s: Binding<GameSession>) -> some View {
         if let diagnosis, !s.wrappedValue.isPaused {
             HintBar(diagnosis: diagnosis, level: hintLevel, nudgeLevels: nudgeLevels,
+                    cages: s.wrappedValue.puzzle.cages, answer: mistakeCell.map { s.wrappedValue.puzzle.solution[$0] },
                     onMore: { escalateHint(s) },
                     onSpotlight: { escalateHint(s) },
                     onLesson: {
@@ -205,8 +206,18 @@ struct GameView: View {
                         changed(s.wrappedValue)
                         startHint(s)   // re-diagnose now that every candidate is shown
                     },
-                    onClose: { self.diagnosis = nil; hintLevel = 0 })
+                    onClose: { self.diagnosis = nil; hintLevel = 0 },
+                    onFix: {
+                        guard case .mistake(let cell, let kind) = diagnosis else { return }
+                        if kind == .wrongDigit { s.wrappedValue.eraseMistake(cell) } else { s.wrappedValue.restoreAnswerMark(cell) }
+                        changed(s.wrappedValue)
+                    })
         }
+    }
+
+    private var mistakeCell: Int? {
+        if case .mistake(let cell, _) = diagnosis { return cell }
+        return nil
     }
 
     private func controls(_ s: Binding<GameSession>, _ arrangement: ControlsArrangement) -> some View {
@@ -214,7 +225,7 @@ struct GameView: View {
                      colorMode: $colorMode, activeColor: $activeColor,
                      onHint: {
                          // Each tap escalates: technique → digit → place → spotlight → lesson,
-                         // or for a mistake: what's wrong → which box → which cell.
+                         // or for a mistake: what's wrong → which box → which cell (→ which digit).
                          if hintStep != nil {
                              if hintLevel <= nudgeLevels { escalateHint(s) } else { logHint("lesson", s); showLesson = true }
                              return
@@ -270,9 +281,11 @@ struct GameView: View {
 
     private func escalateHint(_ s: Binding<GameSession>) {
         hintLevel += 1
-        if case .mistake(let cell, _) = diagnosis, hintLevel >= nudgeLevels {
-            // The exact cell is what Check would show, so it counts as a check.
-            s.wrappedValue.pointOutMistake(cell)
+        if case .mistake(let cell, _) = diagnosis {
+            // The exact cell is what Check would show, so it counts as a check; naming the missing
+            // digit counts as a reveal.
+            if hintLevel == HintText.mistakeCellLevel { s.wrappedValue.pointOutMistake(cell) }
+            if hintLevel == 4 { s.wrappedValue.revealMissingAnswer(cell) }
             model.update(s.wrappedValue, for: key)
         } else if hintLevel <= nudgeLevels {
             logHint("nudge\(hintLevel)", s, counting: "nudge")

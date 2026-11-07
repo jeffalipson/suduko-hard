@@ -13,7 +13,11 @@ extension GameSession {
         var e = entries
         var n = notes
         for cd in step.eliminations where e[cd.cell] == 0 && !autoCandidateMode {
-            if n[cd.cell].isEmpty { n[cd.cell] = board.candidates[cd.cell] }
+            if n[cd.cell].isEmpty {
+                // Fill a bare cell the way Auto Pencil would, cage arithmetic included.
+                let cage = puzzle.cages.first { $0.cells.contains(cd.cell) }
+                n[cd.cell] = board.candidates[cd.cell].intersection(cage?.possibleDigits ?? .all)
+            }
             n[cd.cell].remove(cd.digit)
         }
         for cd in step.placements {
@@ -43,5 +47,17 @@ extension GameSession {
     public mutating func pointOutMistake(_ cell: Int) {
         log.checks += 1
         flag([cell])
+    }
+
+    /// A missing-mark hint's last level names the answer itself, so it counts as a reveal.
+    public mutating func revealMissingAnswer(_ cell: Int) {
+        log.reveals += 1
+    }
+
+    /// Erases a wrong digit the hint pointed out (undoable).
+    public mutating func eraseMistake(_ cell: Int) {
+        guard isWrong(cell) else { return }
+        selected = cell
+        erase()
     }
 }

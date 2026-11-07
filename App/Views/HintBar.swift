@@ -10,6 +10,8 @@ struct HintBar: View {
     /// The hint is a solving step (shows More specific / Show where, and Lesson).
     let isStep: Bool
     let offersAutoPencil: Bool
+    /// A one-tap fix for a pointed-out mistake ("Erase it", "Put it back").
+    var fixLabel: String? = nil
     /// 1...nudgeLevels are nudges; above that the spotlight is on.
     let level: Int
     let nudgeLevels: Int
@@ -18,6 +20,7 @@ struct HintBar: View {
     let onLesson: () -> Void
     let onAutoCandidates: () -> Void
     let onClose: () -> Void
+    var onFix: () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -28,8 +31,16 @@ struct HintBar: View {
                 Spacer()
                 Button("Close", systemImage: "xmark", action: onClose).labelStyle(.iconOnly)
             }
-            if isMistake && level < nudgeLevels {
-                Button("More specific", action: onMore).buttonStyle(.bordered).accessibilityIdentifier("hintMore")
+            if isMistake {
+                HStack {
+                    if level < nudgeLevels {
+                        Button(nudgeLevels == 4 && level == 3 ? "Which digit?" : "More specific", action: onMore)
+                            .buttonStyle(.bordered).accessibilityIdentifier("hintMore")
+                    }
+                    if let fixLabel {
+                        Button(fixLabel, action: onFix).buttonStyle(.borderedProminent).accessibilityIdentifier("hintFix")
+                    }
+                }
             }
             if offersAutoPencil {
                 Button("Turn on Auto Pencil", action: onAutoCandidates)
@@ -57,12 +68,15 @@ struct HintBar: View {
 
 extension HintBar {
     /// A Sudoku hint.
-    init(diagnosis: HintDiagnosis, level: Int, nudgeLevels: Int, onMore: @escaping () -> Void, onSpotlight: @escaping () -> Void,
-         onLesson: @escaping () -> Void, onAutoCandidates: @escaping () -> Void, onClose: @escaping () -> Void) {
+    init(diagnosis: HintDiagnosis, level: Int, nudgeLevels: Int, cages: [Cage], answer: Int?, onMore: @escaping () -> Void,
+         onSpotlight: @escaping () -> Void, onLesson: @escaping () -> Void, onAutoCandidates: @escaping () -> Void,
+         onClose: @escaping () -> Void, onFix: @escaping () -> Void) {
         let isStep: Bool
         if case .step = diagnosis { isStep = true } else { isStep = false }
-        self.init(message: HintText.message(diagnosis, level: level), isMistake: diagnosis.isMistake, isStep: isStep,
-                  offersAutoPencil: HintText.offersAutoCandidates(diagnosis), level: level, nudgeLevels: nudgeLevels,
-                  onMore: onMore, onSpotlight: onSpotlight, onLesson: onLesson, onAutoCandidates: onAutoCandidates, onClose: onClose)
+        self.init(message: HintText.message(diagnosis, level: level, cages: cages, answer: answer), isMistake: diagnosis.isMistake,
+                  isStep: isStep, offersAutoPencil: HintText.offersAutoCandidates(diagnosis),
+                  fixLabel: HintText.fixLabel(diagnosis, level: level), level: level, nudgeLevels: nudgeLevels,
+                  onMore: onMore, onSpotlight: onSpotlight, onLesson: onLesson, onAutoCandidates: onAutoCandidates,
+                  onClose: onClose, onFix: onFix)
     }
 }
