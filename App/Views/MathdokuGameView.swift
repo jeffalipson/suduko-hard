@@ -68,17 +68,13 @@ struct MathdokuGameView: View {
         GeometryReader { geo in
             switch GameLayout.choose(width: geo.size.width, height: geo.size.height) {
             case .stacked:
-                VStack(spacing: 16) {
-                    boardArea(s).padding(.horizontal, 8)
-                    VStack(spacing: 16) {
-                        hintBar(s)
-                        controls(s, .row)
-                    }
-                    .padding(.horizontal, 12)
-                    .frame(maxWidth: regular ? 560 : .infinity)
-                    Spacer(minLength: 0)
+                StackedGameLayout(regular: regular) {
+                    boardArea(s)
+                } controls: {
+                    controls(s, .row)
+                } hint: {
+                    hintBar(s)
                 }
-                .frame(maxWidth: .infinity)
             case .sideBySide(let board):
                 HStack(alignment: .top, spacing: 16) {
                     boardArea(s).frame(width: board, height: board)
