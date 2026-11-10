@@ -107,8 +107,24 @@ import SudokuGame
     @Test func hintTextNamesCages() {
         let step = MathStep(technique: .cageArithmetic, cells: [0, 1, 4], digits: [4], regions: [.cage(0)])
         let text = MathHintText.message(.step(step), level: 3, puzzle: p)
-        #expect(text == "Try Cage Arithmetic with 4 in the 6+ cage.")
+        #expect(text == "Try Cage Arithmetic to rule out 4 in the 6+ cage.")
         #expect(MathHintText.message(.step(step), level: 1, puzzle: p) == "Try Cage Arithmetic.")
+    }
+
+    @Test func hintDigitListsReadNaturally() {
+        #expect(MathHintText.digitList([4]) == "4")
+        #expect(MathHintText.digitList([5, 3]) == "3 and 5")
+        #expect(MathHintText.digitList([1, 4, 6]) == "1, 4 and 6")
+        #expect(MathHintText.digitList(Array(1...9)) == "1–9")
+        #expect(MathHintText.digitList([2, 3, 4, 7]) == "2–4 and 7")
+        #expect(MathHintText.digitList([1, 2, 5, 6, 7, 9]) == "1, 2, 5–7 and 9")
+        let wide = MathStep(technique: .cageArithmetic, cells: [0, 1, 4], digits: Array(1...4), regions: [.cage(0)])
+        #expect(MathHintText.message(.step(wide), level: 2, puzzle: p) == "Try Cage Arithmetic to rule out 1–4.")
+        let pair = MathStep(technique: .cagePair, cells: [0, 1, 4], digits: [1, 3], regions: [.cage(0), .cage(1)])
+        #expect(MathHintText.message(.step(pair), level: 3, puzzle: p)
+                == "Try \(MathTechnique.cagePair.name) to rule out 1 and 3 in \(MathHintText.name(.cage(0), p)) and \(MathHintText.name(.cage(1), p)).")
+        let single = MathStep(technique: .hiddenSingle, cells: [0], digits: [2], regions: [.row(0)])
+        #expect(MathHintText.message(.step(single), level: 3, puzzle: p) == "Try \(MathTechnique.hiddenSingle.name) with 2 in row 1.")
     }
 
     @Test func savesAndLoads() throws {

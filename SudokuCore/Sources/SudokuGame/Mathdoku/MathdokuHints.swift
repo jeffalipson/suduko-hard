@@ -87,18 +87,37 @@ public enum MathHintText {
             }
         case .step(let step):
             let t = step.technique
-            let digits = step.digits.map(String.init).joined(separator: " and ")
-            let place = step.regions.first.map { name($0, puzzle) }
+            // Cage steps list the digits they rule out; the others name the digit they're about.
+            let rulesOut = t == .cageArithmetic || t == .cagePair
+            let core = step.digits.isEmpty ? "Try \(t.name)"
+                : "Try \(t.name) \(rulesOut ? "to rule out" : "with") \(digitList(step.digits))"
+            let places = step.regions.prefix(rulesOut ? 2 : 1).map { name($0, puzzle) }
             switch level {
             case ...1:
                 return "Try \(t.name)."
             case 2:
-                return digits.isEmpty ? "Try \(t.name)." : "Try \(t.name) with \(digits)."
+                return core + "."
             default:
-                let core = digits.isEmpty ? "Try \(t.name)" : "Try \(t.name) with \(digits)"
-                return place.map { "\(core) in \($0)." } ?? "\(core)."
+                return places.isEmpty ? core + "." : "\(core) in \(places.joined(separator: " and "))."
             }
         }
+    }
+
+    /// "4", "3 and 5", "1, 4 and 6"; runs of three or more collapse to a range: "1–9", "2–4 and 7".
+    public static func digitList(_ digits: [Int]) -> String {
+        var parts: [String] = []
+        var run: [Int] = []
+        func flush() {
+            if run.count >= 3 { parts.append("\(run[0])–\(run[run.count - 1])") } else { parts += run.map(String.init) }
+            run = []
+        }
+        for d in Set(digits).sorted() {
+            if let last = run.last, d != last + 1 { flush() }
+            run.append(d)
+        }
+        flush()
+        guard parts.count > 1 else { return parts.first ?? "" }
+        return parts.dropLast().joined(separator: ", ") + " and " + parts[parts.count - 1]
     }
 
     public static func name(_ region: MathRegion, _ puzzle: MathdokuPuzzle) -> String {
