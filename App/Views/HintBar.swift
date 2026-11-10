@@ -29,7 +29,7 @@ struct HintBar: View {
                 Text(message).font(.subheadline).fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("hintMessage")
                 Spacer()
-                Button("Close", systemImage: "xmark", action: onClose).labelStyle(.iconOnly)
+                Button("Close", systemImage: "xmark", action: onClose).labelStyle(.iconOnly).accessibilityIdentifier("hintClose")
             }
             if isMistake {
                 HStack {
